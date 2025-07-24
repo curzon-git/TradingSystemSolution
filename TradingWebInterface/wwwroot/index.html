@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C# Trading Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .status-bar {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            text-align: left;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .positions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .positions-table th,
+        .positions-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .positions-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .positive {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .negative {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .pnl-summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .pnl-total {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .screen-fields {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .screen-fields h3 {
+            margin-bottom: 10px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .field-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .field-item {
+            background: white;
+            padding: 8px;
+            border-radius: 3px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .field-name {
+            font-weight: bold;
+            color: #6c757d;
+        }
+        
+        .field-value {
+            color: #667eea;
+        }
+        
+        .connection-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .connected {
+            background-color: #28a745;
+        }
+        
+        .disconnected {
+            background-color: #dc3545;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .field-display {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                🏛️ C# Trading Interface
+                <span class="connection-indicator connected" id="connection-indicator"></span>
+            </h1>
+            <div class="status-bar">
+                <div><strong>Status:</strong> <span id="status-display">Loading...</span></div>
+                <div><strong>Last Command:</strong> <span id="last-command">None</span></div>
+                <div><strong>Time:</strong> <span id="current-time"></span></div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Order Entry Panel -->
+            <div class="panel">
+                <h2>📝 Order Entry</h2>
+                <div class="form-group">
+                    <label for="symbol-input">Symbol:</label>
+                    <input type="text" id="symbol-input" placeholder="e.g., AAPL" data-field="symbol_input">
+                </div>
+                <div class="form-group">
+                    <label for="quantity-input">Quantity:</label>
+                    <input type="number" id="quantity-input" placeholder="100" data-field="quantity_input">
+                </div>
+                <div class="form-group">
+                    <label for="price-input">Price:</label>
+                    <input type="number" step="0.01" id="price-input" placeholder="150.25" data-field="price_input">
+                </div>
+                <div class="form-group">
+                    <label for="order-type">Order Type:</label>
+                    <select id="order-type" data-field="order_type">
+                        <option value="BUY">BUY</option>
+                        <option value="SELL">SELL</option>
+                    </select>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="placeOrder()">🚀 Place Order</button>
+                    <button class="btn btn-secondary" onclick="clearFields()">🧹 Clear Fields</button>
+                </div>
+            </div>
+
+            <!-- Positions Panel -->
+            <div class="panel">
+                <h2>📊 Current Positions</h2>
+                <div class="pnl-summary">
+                    <div>Account Balance: <strong>$<span id="account-balance">0.00</span></strong></div>
+                    <div class="pnl-total" id="total-pnl">$0.00</div>
+                    <div>Total P&L</div>
+                </div>
+                <button class="btn btn-success" onclick="refreshPositions()">🔄 Refresh Positions</button>
+                <table class="positions-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Quantity</th>
+                            <th>Avg Price</th>
+                            <th>Current Price</th>
+                            <th>P&L</th>
+                            <th>P&L %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positions-tbody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #6c757d;">Loading positions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Screen Fields Display -->
+        <div class="panel">
+            <div class="screen-fields">
+                <h3>🖥️ Screen Fields (C# GetGUIField/PutGUIField)</h3>
+                <div class="field-display" id="screen-fields-display">
+                    <!-- Fields will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let updateInterval;
+        const API_BASE = '/api/trading';
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('C# Trading Interface initialized');
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // Start auto-refresh of positions and screen fields
+            refreshPositions();
+            refreshScreenFields();
+            updateInterval = setInterval(() => {
+                refreshPositions();
+                refreshScreenFields();
+            }, 2000); // Update every 2 seconds
+            
+            // Add event listeners for input fields to sync with C# backend
+            document.querySelectorAll('[data-field]').forEach(input => {
+                input.addEventListener('input', function() {
+                    writeScreenField(this.dataset.field, this.value);
+                });
+                input.addEventListener('change', function() {
+                    writeScreenField(this.dataset.field, this.value);
+                });
+            });
+        });
+
+        // Update current time display
+        function updateTime() {
+            document.getElementById('current-time').textContent = new Date().toLocaleTimeString();
+        }
+
+        // API Helper Functions
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || result.message || `HTTP error! status: ${response.status}`);
+                }
+                
+                return result;
+            } catch (error) {
+                console.error('API call failed:', error);
+                updateStatus(`Error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // C# Screen Field API Functions (GetGUIField/PutGUIField equivalent)
+        async function readScreenField(fieldName) {
+            try {
+                const result = await apiCall(`/screen/read/${fieldName}`);
+                return result.value;
+            } catch (error) {
+                console.error(`Failed to read field ${fieldName}:`, error);
+                return null;
+            }
+        }
+
+        async function writeScreenField(fieldName, value) {
+            try {
+                const result = await apiCall(`/screen/write/${fieldName}`, 'POST', { value: value });
+                return result.success;
+            } catch (error) {
+                console.error(`Failed to write field ${fieldName}:`, error);
+                return false;
+            }
+        }
+
+        async function readAllScreenFields() {
+            try {
+                const result = await apiCall('/screen/read_all');
+                return result.fields;
+            } catch (error) {
+                console.error('Failed to read all screen fields:', error);
+                return {};
+            }
+        }
+
+        // Button Callback Functions (C# button callbacks)
+        async function placeOrder() {
+            try {
+                updateStatus('Placing order...', 'info');
+                const result = await apiCall('/command/place_order', 'POST');
+                updateStatus(result.message, 'success');
+                
+                // Fields are cleared automatically by C# backend on successful order
+                
+                // Refresh positions immediately
+                setTimeout(refreshPositions, 500);
+            } catch (error) {
+                updateStatus(`Order failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearFields() {
+            try {
+                const result = await apiCall('/command/clear_fields', 'POST');
+                updateStatus(result.message, 'success');
+                
+                // Update UI fields to match backend
+                document.getElementById('symbol-input').value = '';
+                document.getElementById('quantity-input').value = '';
+                document.getElementById('price-input').value = '';
+                document.getElementById('order-type').value = 'BUY';
+            } catch (error) {
+                updateStatus(`Clear failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function refreshPositions() {
+            try {
+                const result = await apiCall('/positions');
+                updatePositionsDisplay(result);
+                updateConnectionStatus(true);
+            } catch (error) {
+                console.error('Failed to refresh positions:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Display Update Functions
+        function updatePositionsDisplay(data) {
+            // Update P&L summary
+            document.getElementById('account-balance').textContent = data.accountBalance.toFixed(2);
+            const totalPnlElement = document.getElementById('total-pnl');
+            totalPnlElement.textContent = `$${data.totalPnL.toFixed(2)}`;
+            totalPnlElement.className = `pnl-total ${data.totalPnL >= 0 ? 'positive' : 'negative'}`;
+
+            // Update positions table
+            const tbody = document.getElementById('positions-tbody');
+            if (Object.keys(data.positions).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6c757d;">No positions</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            Object.entries(data.positions).forEach(([symbol, position]) => {
+                const row = document.createElement('tr');
+                const pnlClass = position.pnL >= 0 ? 'positive' : 'negative';
+                
+                row.innerHTML = `
+                    <td><strong>${position.symbol}</strong></td>
+                    <td>${position.quantity}</td>
+                    <td>$${position.avgPrice.toFixed(2)}</td>
+                    <td>$${position.currentPrice.toFixed(2)}</td>
+                    <td class="${pnlClass}">$${position.pnL.toFixed(2)}</td>
+                    <td class="${pnlClass}">${position.pnLPercent.toFixed(2)}%</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function refreshScreenFields() {
+            try {
+                const fields = await readAllScreenFields();
+                updateScreenFieldsDisplay(fields);
+                
+                // Update status and last command
+                if (fields.status_display) {
+                    document.getElementById('status-display').textContent = fields.status_display;
+                }
+                if (fields.last_command) {
+                    document.getElementById('last-command').textContent = fields.last_command;
+                }
+            } catch (error) {
+                console.error('Failed to refresh screen fields:', error);
+            }
+        }
+
+        function updateScreenFieldsDisplay(fields) {
+            const container = document.getElementById('screen-fields-display');
+            container.innerHTML = '';
+            
+            Object.entries(fields).forEach(([fieldName, value]) => {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'field-item';
+                fieldDiv.innerHTML = `
+                    <div class="field-name">${fieldName}:</div>
+                    <div class="field-value">${value || '(empty)'}</div>
+                `;
+                container.appendChild(fieldDiv);
+            });
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusElement = document.getElementById('status-display');
+            statusElement.textContent = message;
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function updateConnectionStatus(isConnected) {
+            const indicator = document.getElementById('connection-indicator');
+            indicator.className = `connection-indicator ${isConnected ? 'connected' : 'disconnected'}`;
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        });
+
+        // Expose functions for external C# client testing
+        window.TradingInterface = {
+            GetGUIField: readScreenField,
+            PutGUIField: writeScreenField,
+            GetAllGUIFields: readAllScreenFields,
+            PlaceOrder: placeOrder,
+            ClearFields: clearFields,
+            RefreshPositions: refreshPositions
+        };
+    </script>
+</body>
+</html>
+
