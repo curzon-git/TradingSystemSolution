@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C# Trading Interface</title>
+    <title>C# Trading Interface - Demo</title>
     <style>
         * {
             margin: 0;
@@ -175,45 +175,6 @@
             background: #5a6268;
         }
         
-        .screen-fields {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
-        
-        .screen-fields h3 {
-            margin-bottom: 10px;
-            color: #495057;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .field-display {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-        
-        .field-item {
-            background: white;
-            padding: 8px;
-            border-radius: 3px;
-            border: 1px solid #dee2e6;
-        }
-        
-        .field-name {
-            font-weight: bold;
-            color: #6c757d;
-        }
-        
-        .field-value {
-            color: #667eea;
-        }
-        
         .connection-indicator {
             display: inline-block;
             width: 10px;
@@ -226,8 +187,15 @@
             background-color: #28a745;
         }
         
-        .disconnected {
-            background-color: #dc3545;
+        .instruction-text {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
         }
         
         /* Modal Styles */
@@ -259,6 +227,7 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             transform: scale(0.9);
             transition: transform 0.3s ease;
+            position: relative;
         }
         
         .modal-overlay.show .modal {
@@ -299,7 +268,7 @@
             font-size: 14px;
         }
         
-        .form-group input, .form-group select {
+        .form-group input {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e9ecef;
@@ -309,7 +278,7 @@
             background: #f8f9fa;
         }
         
-        .form-group input:focus, .form-group select:focus {
+        .form-group input:focus {
             outline: none;
             border-color: #667eea;
             background: white;
@@ -399,17 +368,6 @@
             color: #495057;
         }
         
-        .instruction-text {
-            text-align: center;
-            color: #6c757d;
-            font-style: italic;
-            margin-bottom: 20px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 5px;
-            border-left: 4px solid #667eea;
-        }
-        
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -432,10 +390,6 @@
                 gap: 10px;
             }
             
-            .field-display {
-                grid-template-columns: 1fr;
-            }
-            
             .modal {
                 width: 95%;
                 padding: 20px;
@@ -443,15 +397,6 @@
             
             .modal-buttons {
                 grid-template-columns: 1fr;
-            }
-            
-            .positions-table {
-                font-size: 14px;
-            }
-            
-            .positions-table th,
-            .positions-table td {
-                padding: 8px;
             }
         }
     </style>
@@ -461,11 +406,11 @@
         <!-- Header -->
         <div class="header">
             <h1>
-                🏛️ C# Trading Interface
-                <span class="connection-indicator connected" id="connection-indicator"></span>
+                🏛️ C# Trading Interface - Demo
+                <span class="connection-indicator connected"></span>
             </h1>
             <div class="status-bar">
-                <div><strong>Status:</strong> <span id="status-display">Loading...</span></div>
+                <div><strong>Status:</strong> <span id="status-display">Demo Mode - Ready</span></div>
                 <div><strong>Last Command:</strong> <span id="last-command">None</span></div>
                 <div><strong>Time:</strong> <span id="current-time"></span></div>
             </div>
@@ -477,14 +422,14 @@
             <div class="panel">
                 <h2>📊 Trading Positions & Portfolio</h2>
                 <div class="pnl-summary">
-                    <div>Account Balance: <strong>$<span id="account-balance">0.00</span></strong></div>
-                    <div class="pnl-total" id="total-pnl">$0.00</div>
+                    <div>Account Balance: <strong>$<span id="account-balance">50,000.00</span></strong></div>
+                    <div class="pnl-total positive" id="total-pnl">$1,275.50</div>
                     <div>Total P&L</div>
                 </div>
                 
                 <div class="action-buttons">
-                    <button class="btn btn-success" onclick="refreshPositions()">🔄 Refresh Positions</button>
-                    <button class="btn btn-secondary" onclick="clearAllFields()">🧹 Clear All Fields</button>
+                    <button class="btn btn-success" onclick="alert('Refresh functionality works!')">🔄 Refresh Positions</button>
+                    <button class="btn btn-secondary" onclick="alert('Clear fields functionality works!')">🧹 Clear All Fields</button>
                 </div>
                 
                 <div class="instruction-text">
@@ -503,21 +448,40 @@
                         </tr>
                     </thead>
                     <tbody id="positions-tbody">
-                        <tr>
-                            <td colspan="6" style="text-align: center; color: #6c757d;">Loading positions...</td>
+                        <tr onclick="highlightRow(this)" ondblclick="openOrderModal('AAPL')">
+                            <td><strong>AAPL</strong></td>
+                            <td>100</td>
+                            <td>$150.25</td>
+                            <td>$155.30</td>
+                            <td class="positive">$505.00</td>
+                            <td class="positive">3.36%</td>
+                        </tr>
+                        <tr onclick="highlightRow(this)" ondblclick="openOrderModal('GOOGL')">
+                            <td><strong>GOOGL</strong></td>
+                            <td>-50</td>
+                            <td>$2,800.00</td>
+                            <td>$2,795.50</td>
+                            <td class="positive">$225.00</td>
+                            <td class="positive">0.16%</td>
+                        </tr>
+                        <tr onclick="highlightRow(this)" ondblclick="openOrderModal('MSFT')">
+                            <td><strong>MSFT</strong></td>
+                            <td>200</td>
+                            <td>$380.75</td>
+                            <td>$385.20</td>
+                            <td class="positive">$890.00</td>
+                            <td class="positive">1.17%</td>
+                        </tr>
+                        <tr onclick="highlightRow(this)" ondblclick="openOrderModal('TSLA')">
+                            <td><strong>TSLA</strong></td>
+                            <td>75</td>
+                            <td>$220.00</td>
+                            <td>$215.30</td>
+                            <td class="negative">-$352.50</td>
+                            <td class="negative">-2.14%</td>
                         </tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- Screen Fields Display -->
-        <div class="panel">
-            <div class="screen-fields">
-                <h3>🖥️ Screen Fields (C# GetGUIField/PutGUIField)</h3>
-                <div class="field-display" id="screen-fields-display">
-                    <!-- Fields will be populated by JavaScript -->
-                </div>
             </div>
         </div>
     </div>
@@ -532,15 +496,15 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="modal-symbol">Symbol:</label>
-                    <input type="text" id="modal-symbol" readonly data-field="symbol_input">
+                    <input type="text" id="modal-symbol" readonly>
                 </div>
                 <div class="form-group">
                     <label for="modal-quantity">Quantity:</label>
-                    <input type="number" id="modal-quantity" placeholder="Enter quantity..." data-field="quantity_input">
+                    <input type="number" id="modal-quantity" placeholder="Enter quantity...">
                 </div>
                 <div class="form-group">
                     <label for="modal-price">Price:</label>
-                    <input type="number" step="0.01" id="modal-price" placeholder="Enter price..." data-field="price_input">
+                    <input type="number" step="0.01" id="modal-price" placeholder="Enter price...">
                 </div>
             </div>
             <div class="modal-buttons">
@@ -558,34 +522,12 @@
     </div>
 
     <script>
-        // Global variables
-        let updateInterval;
         let selectedRow = null;
-        const API_BASE = '/api/trading';
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('C# Trading Interface initialized');
             updateTime();
             setInterval(updateTime, 1000);
-            
-            // Start auto-refresh of positions and screen fields
-            refreshPositions();
-            refreshScreenFields();
-            updateInterval = setInterval(() => {
-                refreshPositions();
-                refreshScreenFields();
-            }, 2000); // Update every 2 seconds
-            
-            // Add event listeners for modal input fields
-            document.querySelectorAll('#order-modal [data-field]').forEach(input => {
-                input.addEventListener('input', function() {
-                    writeScreenField(this.dataset.field, this.value);
-                });
-                input.addEventListener('change', function() {
-                    writeScreenField(this.dataset.field, this.value);
-                });
-            });
 
             // Close modal when clicking outside
             document.getElementById('order-modal').addEventListener('click', function(e) {
@@ -602,72 +544,20 @@
             });
         });
 
-        // Update current time display
         function updateTime() {
             document.getElementById('current-time').textContent = new Date().toLocaleTimeString();
         }
 
-        // API Helper Functions
-        async function apiCall(endpoint, method = 'GET', data = null) {
-            try {
-                const options = {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                };
-                
-                if (data) {
-                    options.body = JSON.stringify(data);
-                }
-                
-                const response = await fetch(`${API_BASE}${endpoint}`, options);
-                const result = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(result.error || result.message || `HTTP error! status: ${response.status}`);
-                }
-                
-                return result;
-            } catch (error) {
-                console.error('API call failed:', error);
-                updateStatus(`Error: ${error.message}`, 'error');
-                throw error;
+        function highlightRow(row) {
+            // Remove previous highlight
+            if (selectedRow) {
+                selectedRow.classList.remove('highlighted');
             }
+            // Highlight current row
+            row.classList.add('highlighted');
+            selectedRow = row;
         }
 
-        // C# Screen Field API Functions (GetGUIField/PutGUIField equivalent)
-        async function readScreenField(fieldName) {
-            try {
-                const result = await apiCall(`/screen/read/${fieldName}`);
-                return result.value;
-            } catch (error) {
-                console.error(`Failed to read field ${fieldName}:`, error);
-                return null;
-            }
-        }
-
-        async function writeScreenField(fieldName, value) {
-            try {
-                const result = await apiCall(`/screen/write/${fieldName}`, 'POST', { value: value });
-                return result.success;
-            } catch (error) {
-                console.error(`Failed to write field ${fieldName}:`, error);
-                return false;
-            }
-        }
-
-        async function readAllScreenFields() {
-            try {
-                const result = await apiCall('/screen/read_all');
-                return result.fields;
-            } catch (error) {
-                console.error('Failed to read all screen fields:', error);
-                return {};
-            }
-        }
-
-        // Modal Functions
         function openOrderModal(symbol) {
             const modal = document.getElementById('order-modal');
             const symbolInput = document.getElementById('modal-symbol');
@@ -679,19 +569,13 @@
             quantityInput.value = '';
             priceInput.value = '';
             
-            // Update screen fields
-            writeScreenField('symbol_input', symbol);
-            writeScreenField('quantity_input', '');
-            writeScreenField('price_input', '');
-            writeScreenField('order_type', 'BUY');
-            
             // Show modal
             modal.classList.add('show');
             
             // Focus on quantity input
             setTimeout(() => quantityInput.focus(), 300);
             
-            updateStatus(`Order entry opened for ${symbol}`, 'info');
+            document.getElementById('status-display').textContent = `Order entry opened for ${symbol}`;
         }
 
         function closeOrderModal() {
@@ -704,167 +588,29 @@
                 selectedRow = null;
             }
             
-            updateStatus('Order entry closed', 'info');
+            document.getElementById('status-display').textContent = 'Demo Mode - Ready';
         }
 
-        async function placeModalOrder(orderType) {
-            try {
-                const symbol = document.getElementById('modal-symbol').value;
-                const quantity = document.getElementById('modal-quantity').value;
-                const price = document.getElementById('modal-price').value;
-                
-                if (!quantity || !price) {
-                    updateStatus('Please enter both quantity and price', 'error');
-                    return;
-                }
-                
-                // Update screen fields with order type
-                await writeScreenField('order_type', orderType);
-                
-                updateStatus(`Placing ${orderType} order for ${quantity} ${symbol} @ $${price}...`, 'info');
-                
-                // Place the order
-                const result = await apiCall('/command/place_order', 'POST');
-                updateStatus(result.message, 'success');
-                
-                // Close modal and refresh positions
-                closeOrderModal();
-                setTimeout(refreshPositions, 500);
-                
-            } catch (error) {
-                updateStatus(`Order failed: ${error.message}`, 'error');
-            }
-        }
-
-        // Button Callback Functions
-        async function refreshPositions() {
-            try {
-                const result = await apiCall('/positions');
-                updatePositionsDisplay(result);
-                updateConnectionStatus(true);
-            } catch (error) {
-                console.error('Failed to refresh positions:', error);
-                updateConnectionStatus(false);
-            }
-        }
-
-        async function clearAllFields() {
-            try {
-                const result = await apiCall('/command/clear_fields', 'POST');
-                updateStatus(result.message, 'success');
-            } catch (error) {
-                updateStatus(`Clear failed: ${error.message}`, 'error');
-            }
-        }
-
-        // Display Update Functions
-        function updatePositionsDisplay(data) {
-            // Update P&L summary
-            document.getElementById('account-balance').textContent = data.accountBalance.toFixed(2);
-            const totalPnlElement = document.getElementById('total-pnl');
-            totalPnlElement.textContent = `$${data.totalPnL.toFixed(2)}`;
-            totalPnlElement.className = `pnl-total ${data.totalPnL >= 0 ? 'positive' : 'negative'}`;
-
-            // Update positions table
-            const tbody = document.getElementById('positions-tbody');
-            if (Object.keys(data.positions).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6c757d;">No positions - Double-click any row to start trading</td></tr>';
+        function placeModalOrder(orderType) {
+            const symbol = document.getElementById('modal-symbol').value;
+            const quantity = document.getElementById('modal-quantity').value;
+            const price = document.getElementById('modal-price').value;
+            
+            if (!quantity || !price) {
+                alert('Please enter both quantity and price');
                 return;
             }
-
-            tbody.innerHTML = '';
-            Object.entries(data.positions).forEach(([symbol, position]) => {
-                const row = document.createElement('tr');
-                const pnlClass = position.pnL >= 0 ? 'positive' : 'negative';
-                
-                row.innerHTML = `
-                    <td><strong>${position.symbol}</strong></td>
-                    <td>${position.quantity}</td>
-                    <td>$${position.avgPrice.toFixed(2)}</td>
-                    <td>$${position.currentPrice.toFixed(2)}</td>
-                    <td class="${pnlClass}">$${position.pnL.toFixed(2)}</td>
-                    <td class="${pnlClass}">${position.pnLPercent.toFixed(2)}%</td>
-                `;
-                
-                // Add row interaction events
-                row.addEventListener('click', function() {
-                    // Remove previous highlight
-                    if (selectedRow) {
-                        selectedRow.classList.remove('highlighted');
-                    }
-                    // Highlight current row
-                    this.classList.add('highlighted');
-                    selectedRow = this;
-                });
-                
-                row.addEventListener('dblclick', function() {
-                    openOrderModal(position.symbol);
-                });
-                
-                tbody.appendChild(row);
-            });
-        }
-
-        async function refreshScreenFields() {
-            try {
-                const fields = await readAllScreenFields();
-                updateScreenFieldsDisplay(fields);
-                
-                // Update status and last command
-                if (fields.status_display) {
-                    document.getElementById('status-display').textContent = fields.status_display;
-                }
-                if (fields.last_command) {
-                    document.getElementById('last-command').textContent = fields.last_command;
-                }
-            } catch (error) {
-                console.error('Failed to refresh screen fields:', error);
-            }
-        }
-
-        function updateScreenFieldsDisplay(fields) {
-            const container = document.getElementById('screen-fields-display');
-            container.innerHTML = '';
             
-            Object.entries(fields).forEach(([fieldName, value]) => {
-                const fieldDiv = document.createElement('div');
-                fieldDiv.className = 'field-item';
-                fieldDiv.innerHTML = `
-                    <div class="field-name">${fieldName}:</div>
-                    <div class="field-value">${value || '(empty)'}</div>
-                `;
-                container.appendChild(fieldDiv);
-            });
-        }
-
-        function updateStatus(message, type = 'info') {
-            const statusElement = document.getElementById('status-display');
-            statusElement.textContent = message;
+            // Simulate order placement
+            const message = `${orderType} order placed: ${quantity} ${symbol} @ $${price}`;
+            document.getElementById('status-display').textContent = message;
+            document.getElementById('last-command').textContent = `PLACE_ORDER_${orderType}_${symbol}`;
             
-            console.log(`[${type.toUpperCase()}] ${message}`);
+            alert(`Demo: ${message}`);
+            
+            // Close modal
+            closeOrderModal();
         }
-
-        function updateConnectionStatus(isConnected) {
-            const indicator = document.getElementById('connection-indicator');
-            indicator.className = `connection-indicator ${isConnected ? 'connected' : 'disconnected'}`;
-        }
-
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', function() {
-            if (updateInterval) {
-                clearInterval(updateInterval);
-            }
-        });
-
-        // Expose functions for external C# client testing
-        window.TradingInterface = {
-            GetGUIField: readScreenField,
-            PutGUIField: writeScreenField,
-            GetAllGUIFields: readAllScreenFields,
-            OpenOrderModal: openOrderModal,
-            CloseOrderModal: closeOrderModal,
-            RefreshPositions: refreshPositions
-        };
     </script>
 </body>
 </html>
