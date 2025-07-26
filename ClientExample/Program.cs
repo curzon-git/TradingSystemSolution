@@ -108,6 +108,105 @@ namespace ClientExample
             }
         }
 
+        /// <summary>
+        /// AddRow - Add a new position to the webpage
+        /// Usage: var success = await client.AddRow(new Position { Symbol = "AAPL", Quantity = 100, AvgPrice = 150.00m });
+        /// </summary>
+        public async Task<bool> AddRow(Position position)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(position);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                var response = await _httpClient.PostAsync($"{_baseUrl}/api/trading/rows/add", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<CommandResponse>(responseJson);
+                    Console.WriteLine($"AddRow result: {result?.Message}");
+                    return result?.Success ?? false;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error adding row for {position.Symbol}: {response.StatusCode} - {errorContent}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception adding row for {position.Symbol}: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// DeleteRow - Delete a position row from the webpage
+        /// Usage: var success = await client.DeleteRow("AAPL");
+        /// </summary>
+        public async Task<bool> DeleteRow(string symbol)
+        {
+            try
+            {
+                var response = await _httpClient.DeleteAsync($"{_baseUrl}/api/trading/rows/delete/{symbol}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<CommandResponse>(json);
+                    Console.WriteLine($"DeleteRow result: {result?.Message}");
+                    return result?.Success ?? false;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error deleting row for {symbol}: {response.StatusCode} - {errorContent}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception deleting row for {symbol}: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// UpdateRow - Update an existing position row on the webpage
+        /// Usage: var success = await client.UpdateRow("AAPL", new Position { Symbol = "AAPL", Quantity = 200, AvgPrice = 155.00m });
+        /// </summary>
+        public async Task<bool> UpdateRow(string symbol, Position position)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(position);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                var response = await _httpClient.PutAsync($"{_baseUrl}/api/trading/rows/update/{symbol}", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<CommandResponse>(responseJson);
+                    Console.WriteLine($"UpdateRow result: {result?.Message}");
+                    return result?.Success ?? false;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error updating row for {symbol}: {response.StatusCode} - {errorContent}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception updating row for {symbol}: {ex.Message}");
+                return false;
+            }
+        }
+
         public void Dispose()
         {
             _httpClient?.Dispose();
@@ -126,6 +225,15 @@ namespace ClientExample
     {
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
+    }
+
+    // Position model for row management
+    public class Position
+    {
+        public string Symbol { get; set; } = string.Empty;
+        public int Quantity { get; set; }
+        public decimal AvgPrice { get; set; }
+        public decimal CurrentPrice { get; set; }
     }
 
     /// <summary>
@@ -194,12 +302,53 @@ namespace ClientExample
                 Console.WriteLine($"   Total P&L: ${totalPnL}");
                 Console.WriteLine();
 
+                // Demonstrate new row management APIs
+                Console.WriteLine("5. Testing new Row Management APIs:");
+                Console.WriteLine();
+
+                // Test AddRow API
+                Console.WriteLine("   5a. Testing AddRow API:");
+                var newPosition = new Position
+                {
+                    Symbol = "TSLA",
+                    Quantity = 50,
+                    AvgPrice = 250.00m,
+                    CurrentPrice = 255.00m
+                };
+                
+                bool addResult = await client.AddRow(newPosition);
+                Console.WriteLine($"   AddRow(TSLA position) = {addResult}");
+                Console.WriteLine();
+
+                // Test UpdateRow API
+                Console.WriteLine("   5b. Testing UpdateRow API:");
+                var updatedPosition = new Position
+                {
+                    Symbol = "TSLA",
+                    Quantity = 75,
+                    AvgPrice = 248.00m,
+                    CurrentPrice = 255.00m
+                };
+                
+                bool updateResult = await client.UpdateRow("TSLA", updatedPosition);
+                Console.WriteLine($"   UpdateRow(TSLA, updated position) = {updateResult}");
+                Console.WriteLine();
+
+                // Test DeleteRow API
+                Console.WriteLine("   5c. Testing DeleteRow API:");
+                bool deleteResult = await client.DeleteRow("TSLA");
+                Console.WriteLine($"   DeleteRow(TSLA) = {deleteResult}");
+                Console.WriteLine();
+
                 Console.WriteLine("=== Demo completed successfully! ===");
                 Console.WriteLine();
                 Console.WriteLine("Your requested APIs are working perfectly:");
                 Console.WriteLine("✅ GetGUIField(webpagetagname, fieldonwebpagetagname)");
                 Console.WriteLine("✅ PutGUIField(webpagetagname, fieldonwebpagetagname, value)");
                 Console.WriteLine("✅ Button callbacks for user interactions");
+                Console.WriteLine("✅ AddRow(Position posn) - NEW!");
+                Console.WriteLine("✅ DeleteRow(string symbol) - NEW!");
+                Console.WriteLine("✅ UpdateRow(string symbol, Position posn) - NEW!");
                 Console.WriteLine("✅ Multi-machine web access");
                 Console.WriteLine("✅ Direct integration with your C# trading system");
             }

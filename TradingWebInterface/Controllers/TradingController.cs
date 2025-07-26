@@ -303,6 +303,214 @@ namespace TradingWebInterface.Controllers
 
         #endregion
 
+        #region Row Management APIs
+
+        /// <summary>
+        /// Add a new position row to the webpage
+        /// POST /api/trading/rows/add
+        /// </summary>
+        [HttpPost("rows/add")]
+        public async Task<ActionResult<CommandResponse>> AddRow([FromBody] Position position)
+        {
+            try
+            {
+                _logger.LogInformation("AddRow called for symbol: {Symbol}", position?.Symbol);
+
+                if (position == null)
+                {
+                    return BadRequest(new CommandResponse
+                    {
+                        Success = false,
+                        Message = "Position data is required"
+                    });
+                }
+
+                if (string.IsNullOrEmpty(position.Symbol))
+                {
+                    return BadRequest(new CommandResponse
+                    {
+                        Success = false,
+                        Message = "Symbol is required"
+                    });
+                }
+
+                // Add the position through the trading system
+                var result = await _tradingSystem.AddPositionAsync(position);
+                
+                if (result.Success)
+                {
+                    _screenFields.UpdateStatus($"Position added: {position.Symbol}");
+                    _screenFields.UpdateLastCommand($"ADD_ROW_{position.Symbol}");
+                    
+                    _logger.LogInformation("Position added successfully: {Symbol}", position.Symbol);
+                }
+                else
+                {
+                    _screenFields.UpdateStatus($"Failed to add position: {result.Message}");
+                    _screenFields.UpdateLastCommand("ADD_ROW_FAILED");
+                    
+                    _logger.LogWarning("Failed to add position {Symbol}: {Message}", position.Symbol, result.Message);
+                }
+
+                return Ok(new CommandResponse
+                {
+                    Success = result.Success,
+                    Message = result.Message,
+                    Data = new { Symbol = position.Symbol, Quantity = position.Quantity }
+                });
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Add row error: {ex.Message}";
+                _screenFields.UpdateStatus(errorMsg);
+                _screenFields.UpdateLastCommand("ADD_ROW_ERROR");
+                
+                _logger.LogError(ex, "Error in AddRow for symbol {Symbol}", position?.Symbol);
+                
+                return StatusCode(500, new CommandResponse
+                {
+                    Success = false,
+                    Message = errorMsg
+                });
+            }
+        }
+
+        /// <summary>
+        /// Delete a position row from the webpage
+        /// DELETE /api/trading/rows/delete/{symbol}
+        /// </summary>
+        [HttpDelete("rows/delete/{symbol}")]
+        public async Task<ActionResult<CommandResponse>> DeleteRow(string symbol)
+        {
+            try
+            {
+                _logger.LogInformation("DeleteRow called for symbol: {Symbol}", symbol);
+
+                if (string.IsNullOrEmpty(symbol))
+                {
+                    return BadRequest(new CommandResponse
+                    {
+                        Success = false,
+                        Message = "Symbol is required"
+                    });
+                }
+
+                // Delete the position through the trading system
+                var result = await _tradingSystem.DeletePositionAsync(symbol);
+                
+                if (result.Success)
+                {
+                    _screenFields.UpdateStatus($"Position deleted: {symbol}");
+                    _screenFields.UpdateLastCommand($"DELETE_ROW_{symbol}");
+                    
+                    _logger.LogInformation("Position deleted successfully: {Symbol}", symbol);
+                }
+                else
+                {
+                    _screenFields.UpdateStatus($"Failed to delete position: {result.Message}");
+                    _screenFields.UpdateLastCommand("DELETE_ROW_FAILED");
+                    
+                    _logger.LogWarning("Failed to delete position {Symbol}: {Message}", symbol, result.Message);
+                }
+
+                return Ok(new CommandResponse
+                {
+                    Success = result.Success,
+                    Message = result.Message,
+                    Data = new { Symbol = symbol }
+                });
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Delete row error: {ex.Message}";
+                _screenFields.UpdateStatus(errorMsg);
+                _screenFields.UpdateLastCommand("DELETE_ROW_ERROR");
+                
+                _logger.LogError(ex, "Error in DeleteRow for symbol {Symbol}", symbol);
+                
+                return StatusCode(500, new CommandResponse
+                {
+                    Success = false,
+                    Message = errorMsg
+                });
+            }
+        }
+
+        /// <summary>
+        /// Update an existing position row on the webpage
+        /// PUT /api/trading/rows/update/{symbol}
+        /// </summary>
+        [HttpPut("rows/update/{symbol}")]
+        public async Task<ActionResult<CommandResponse>> UpdateRow(string symbol, [FromBody] Position position)
+        {
+            try
+            {
+                _logger.LogInformation("UpdateRow called for symbol: {Symbol}", symbol);
+
+                if (string.IsNullOrEmpty(symbol))
+                {
+                    return BadRequest(new CommandResponse
+                    {
+                        Success = false,
+                        Message = "Symbol is required"
+                    });
+                }
+
+                if (position == null)
+                {
+                    return BadRequest(new CommandResponse
+                    {
+                        Success = false,
+                        Message = "Position data is required"
+                    });
+                }
+
+                // Ensure the position symbol matches the URL parameter
+                position.Symbol = symbol;
+
+                // Update the position through the trading system
+                var result = await _tradingSystem.UpdatePositionAsync(symbol, position);
+                
+                if (result.Success)
+                {
+                    _screenFields.UpdateStatus($"Position updated: {symbol}");
+                    _screenFields.UpdateLastCommand($"UPDATE_ROW_{symbol}");
+                    
+                    _logger.LogInformation("Position updated successfully: {Symbol}", symbol);
+                }
+                else
+                {
+                    _screenFields.UpdateStatus($"Failed to update position: {result.Message}");
+                    _screenFields.UpdateLastCommand("UPDATE_ROW_FAILED");
+                    
+                    _logger.LogWarning("Failed to update position {Symbol}: {Message}", symbol, result.Message);
+                }
+
+                return Ok(new CommandResponse
+                {
+                    Success = result.Success,
+                    Message = result.Message,
+                    Data = new { Symbol = symbol, Quantity = position.Quantity, AvgPrice = position.AvgPrice }
+                });
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Update row error: {ex.Message}";
+                _screenFields.UpdateStatus(errorMsg);
+                _screenFields.UpdateLastCommand("UPDATE_ROW_ERROR");
+                
+                _logger.LogError(ex, "Error in UpdateRow for symbol {Symbol}", symbol);
+                
+                return StatusCode(500, new CommandResponse
+                {
+                    Success = false,
+                    Message = errorMsg
+                });
+            }
+        }
+
+        #endregion
+
         #region Trading Data APIs
 
         /// <summary>

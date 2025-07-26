@@ -188,6 +188,189 @@ namespace TradingWebInterface.Services
         }
 
         /// <summary>
+        /// Add a new position to the system
+        /// </summary>
+        public async Task<OrderResult> AddPositionAsync(Position position)
+        {
+            // TODO: Replace with call to your trading system
+            // Example: return await YourTradingSystem.AddPositionAsync(position);
+            
+            await Task.Delay(50); // Simulate processing time
+            
+            try
+            {
+                // Validate position data
+                if (string.IsNullOrEmpty(position.Symbol))
+                    throw new ArgumentException("Symbol is required");
+                
+                if (position.Quantity == 0)
+                    throw new ArgumentException("Quantity cannot be zero");
+                
+                if (position.AvgPrice <= 0)
+                    throw new ArgumentException("Average price must be greater than zero");
+
+                // Check if position already exists
+                if (_positions.ContainsKey(position.Symbol))
+                {
+                    return new OrderResult
+                    {
+                        Success = false,
+                        Message = $"Position for {position.Symbol} already exists. Use UpdateRow to modify it.",
+                        OrderId = string.Empty
+                    };
+                }
+
+                // Set current price if not provided
+                if (position.CurrentPrice <= 0)
+                {
+                    position.CurrentPrice = position.AvgPrice;
+                }
+
+                // Add the new position
+                _positions[position.Symbol] = new Position
+                {
+                    Symbol = position.Symbol,
+                    Quantity = position.Quantity,
+                    AvgPrice = position.AvgPrice,
+                    CurrentPrice = position.CurrentPrice
+                };
+
+                return new OrderResult
+                {
+                    Success = true,
+                    Message = $"Position added successfully: {position.Symbol} ({position.Quantity} shares @ ${position.AvgPrice:F2})",
+                    OrderId = Guid.NewGuid().ToString("N")[..8].ToUpper()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new OrderResult
+                {
+                    Success = false,
+                    Message = $"Failed to add position: {ex.Message}",
+                    OrderId = string.Empty
+                };
+            }
+        }
+
+        /// <summary>
+        /// Delete a position from the system
+        /// </summary>
+        public async Task<OrderResult> DeletePositionAsync(string symbol)
+        {
+            // TODO: Replace with call to your trading system
+            // Example: return await YourTradingSystem.DeletePositionAsync(symbol);
+            
+            await Task.Delay(50); // Simulate processing time
+            
+            try
+            {
+                if (string.IsNullOrEmpty(symbol))
+                    throw new ArgumentException("Symbol is required");
+
+                // Check if position exists
+                if (!_positions.ContainsKey(symbol))
+                {
+                    return new OrderResult
+                    {
+                        Success = false,
+                        Message = $"Position for {symbol} not found",
+                        OrderId = string.Empty
+                    };
+                }
+
+                // Remove the position
+                var removedPosition = _positions[symbol];
+                _positions.Remove(symbol);
+
+                return new OrderResult
+                {
+                    Success = true,
+                    Message = $"Position deleted successfully: {symbol} ({removedPosition.Quantity} shares)",
+                    OrderId = Guid.NewGuid().ToString("N")[..8].ToUpper()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new OrderResult
+                {
+                    Success = false,
+                    Message = $"Failed to delete position: {ex.Message}",
+                    OrderId = string.Empty
+                };
+            }
+        }
+
+        /// <summary>
+        /// Update an existing position in the system
+        /// </summary>
+        public async Task<OrderResult> UpdatePositionAsync(string symbol, Position position)
+        {
+            // TODO: Replace with call to your trading system
+            // Example: return await YourTradingSystem.UpdatePositionAsync(symbol, position);
+            
+            await Task.Delay(50); // Simulate processing time
+            
+            try
+            {
+                if (string.IsNullOrEmpty(symbol))
+                    throw new ArgumentException("Symbol is required");
+                
+                if (position == null)
+                    throw new ArgumentException("Position data is required");
+                
+                if (position.Quantity == 0)
+                    throw new ArgumentException("Quantity cannot be zero");
+                
+                if (position.AvgPrice <= 0)
+                    throw new ArgumentException("Average price must be greater than zero");
+
+                // Check if position exists
+                if (!_positions.ContainsKey(symbol))
+                {
+                    return new OrderResult
+                    {
+                        Success = false,
+                        Message = $"Position for {symbol} not found. Use AddRow to create it.",
+                        OrderId = string.Empty
+                    };
+                }
+
+                // Preserve current price if not provided or invalid
+                var existingPosition = _positions[symbol];
+                if (position.CurrentPrice <= 0)
+                {
+                    position.CurrentPrice = existingPosition.CurrentPrice;
+                }
+
+                // Update the position
+                _positions[symbol] = new Position
+                {
+                    Symbol = symbol,
+                    Quantity = position.Quantity,
+                    AvgPrice = position.AvgPrice,
+                    CurrentPrice = position.CurrentPrice
+                };
+
+                return new OrderResult
+                {
+                    Success = true,
+                    Message = $"Position updated successfully: {symbol} ({position.Quantity} shares @ ${position.AvgPrice:F2})",
+                    OrderId = Guid.NewGuid().ToString("N")[..8].ToUpper()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new OrderResult
+                {
+                    Success = false,
+                    Message = $"Failed to update position: {ex.Message}",
+                    OrderId = string.Empty
+                };
+            }
+        }
+
+        /// <summary>
         /// Simulate live price movements (remove this in production)
         /// </summary>
         private async Task SimulatePriceMovements()

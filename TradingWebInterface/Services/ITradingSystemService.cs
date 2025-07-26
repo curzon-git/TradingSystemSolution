@@ -37,6 +37,21 @@ namespace TradingWebInterface.Services
         /// Get system status message
         /// </summary>
         Task<string> GetSystemStatusAsync();
+
+        /// <summary>
+        /// Add a new position (row) to the system
+        /// </summary>
+        Task<OrderResult> AddPositionAsync(Position position);
+
+        /// <summary>
+        /// Delete a position (row) from the system
+        /// </summary>
+        Task<OrderResult> DeletePositionAsync(string symbol);
+
+        /// <summary>
+        /// Update an existing position (row) in the system
+        /// </summary>
+        Task<OrderResult> UpdatePositionAsync(string symbol, Position position);
     }
 }
 

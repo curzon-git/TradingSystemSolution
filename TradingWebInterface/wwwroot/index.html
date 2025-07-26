@@ -485,6 +485,9 @@
                 <div class="action-buttons">
                     <button class="btn btn-success" onclick="refreshPositions()">🔄 Refresh Positions</button>
                     <button class="btn btn-secondary" onclick="clearAllFields()">🧹 Clear All Fields</button>
+                    <button class="btn btn-primary" onclick="openAddRowModal()">➕ Add Position</button>
+                    <button class="btn btn-warning" onclick="openUpdateRowModal()">✏️ Update Position</button>
+                    <button class="btn btn-danger" onclick="openDeleteRowModal()">🗑️ Delete Position</button>
                 </div>
                 
                 <div class="instruction-text">
@@ -551,6 +554,109 @@
                     📉 SELL
                 </button>
                 <button class="btn btn-cancel" onclick="closeOrderModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Position Modal -->
+    <div class="modal-overlay" id="add-row-modal">
+        <div class="modal">
+            <button class="close-btn" onclick="closeAddRowModal()">&times;</button>
+            <div class="modal-header">
+                <h3>➕ Add New Position</h3>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="add-symbol">Symbol:</label>
+                    <input type="text" id="add-symbol" placeholder="Enter symbol (e.g., AAPL)..." style="text-transform: uppercase;">
+                </div>
+                <div class="form-group">
+                    <label for="add-quantity">Quantity:</label>
+                    <input type="number" id="add-quantity" placeholder="Enter quantity...">
+                </div>
+                <div class="form-group">
+                    <label for="add-avg-price">Average Price:</label>
+                    <input type="number" step="0.01" id="add-avg-price" placeholder="Enter average price...">
+                </div>
+                <div class="form-group">
+                    <label for="add-current-price">Current Price (optional):</label>
+                    <input type="number" step="0.01" id="add-current-price" placeholder="Leave blank to use avg price...">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="addPosition()">
+                    ➕ Add Position
+                </button>
+                <button class="btn btn-cancel" onclick="closeAddRowModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Position Modal -->
+    <div class="modal-overlay" id="update-row-modal">
+        <div class="modal">
+            <button class="close-btn" onclick="closeUpdateRowModal()">&times;</button>
+            <div class="modal-header">
+                <h3>✏️ Update Position</h3>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="update-symbol">Symbol:</label>
+                    <select id="update-symbol" onchange="loadPositionForUpdate()">
+                        <option value="">Select a position to update...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="update-quantity">Quantity:</label>
+                    <input type="number" id="update-quantity" placeholder="Enter new quantity...">
+                </div>
+                <div class="form-group">
+                    <label for="update-avg-price">Average Price:</label>
+                    <input type="number" step="0.01" id="update-avg-price" placeholder="Enter new average price...">
+                </div>
+                <div class="form-group">
+                    <label for="update-current-price">Current Price (optional):</label>
+                    <input type="number" step="0.01" id="update-current-price" placeholder="Leave blank to keep current...">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-warning" onclick="updatePosition()">
+                    ✏️ Update Position
+                </button>
+                <button class="btn btn-cancel" onclick="closeUpdateRowModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Position Modal -->
+    <div class="modal-overlay" id="delete-row-modal">
+        <div class="modal">
+            <button class="close-btn" onclick="closeDeleteRowModal()">&times;</button>
+            <div class="modal-header">
+                <h3>🗑️ Delete Position</h3>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="delete-symbol">Symbol:</label>
+                    <select id="delete-symbol">
+                        <option value="">Select a position to delete...</option>
+                    </select>
+                </div>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 15px 0; color: #856404;">
+                    <strong>⚠️ Warning:</strong> This action will permanently delete the selected position from the system.
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" onclick="deletePosition()">
+                    🗑️ Delete Position
+                </button>
+                <button class="btn btn-cancel" onclick="closeDeleteRowModal()">
                     Cancel
                 </button>
             </div>
@@ -855,6 +961,227 @@
                 clearInterval(updateInterval);
             }
         });
+
+        // Row Management Functions
+        
+        // Add Position Modal Functions
+        function openAddRowModal() {
+            document.getElementById('add-row-modal').classList.add('show');
+            document.getElementById('add-symbol').focus();
+        }
+
+        function closeAddRowModal() {
+            document.getElementById('add-row-modal').classList.remove('show');
+            // Clear form
+            document.getElementById('add-symbol').value = '';
+            document.getElementById('add-quantity').value = '';
+            document.getElementById('add-avg-price').value = '';
+            document.getElementById('add-current-price').value = '';
+        }
+
+        async function addPosition() {
+            const symbol = document.getElementById('add-symbol').value.trim().toUpperCase();
+            const quantity = parseInt(document.getElementById('add-quantity').value);
+            const avgPrice = parseFloat(document.getElementById('add-avg-price').value);
+            const currentPrice = parseFloat(document.getElementById('add-current-price').value) || avgPrice;
+
+            if (!symbol || !quantity || !avgPrice) {
+                alert('Please fill in Symbol, Quantity, and Average Price fields.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/rows/add`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        Symbol: symbol,
+                        Quantity: quantity,
+                        AvgPrice: avgPrice,
+                        CurrentPrice: currentPrice
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`Position added: ${symbol}`, 'success');
+                    closeAddRowModal();
+                    refreshPositions(); // Refresh the positions table
+                } else {
+                    updateStatus(`Failed to add position: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error adding position:', error);
+                updateStatus('Error adding position', 'error');
+                alert('Error adding position. Please try again.');
+            }
+        }
+
+        // Update Position Modal Functions
+        function openUpdateRowModal() {
+            const modal = document.getElementById('update-row-modal');
+            const select = document.getElementById('update-symbol');
+            
+            // Populate symbol dropdown with current positions
+            select.innerHTML = '<option value="">Select a position to update...</option>';
+            
+            fetch(`${API_BASE}/positions`)
+                .then(response => response.json())
+                .then(data => {
+                    Object.keys(data.positions).forEach(symbol => {
+                        const option = document.createElement('option');
+                        option.value = symbol;
+                        option.textContent = symbol;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading positions:', error);
+                    updateStatus('Error loading positions for update', 'error');
+                });
+            
+            modal.classList.add('show');
+        }
+
+        function closeUpdateRowModal() {
+            document.getElementById('update-row-modal').classList.remove('show');
+            // Clear form
+            document.getElementById('update-symbol').value = '';
+            document.getElementById('update-quantity').value = '';
+            document.getElementById('update-avg-price').value = '';
+            document.getElementById('update-current-price').value = '';
+        }
+
+        function loadPositionForUpdate() {
+            const symbol = document.getElementById('update-symbol').value;
+            if (!symbol) return;
+
+            fetch(`${API_BASE}/positions`)
+                .then(response => response.json())
+                .then(data => {
+                    const position = data.positions[symbol];
+                    if (position) {
+                        document.getElementById('update-quantity').value = position.quantity;
+                        document.getElementById('update-avg-price').value = position.avgPrice.toFixed(2);
+                        document.getElementById('update-current-price').value = position.currentPrice.toFixed(2);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading position details:', error);
+                    updateStatus('Error loading position details', 'error');
+                });
+        }
+
+        async function updatePosition() {
+            const symbol = document.getElementById('update-symbol').value;
+            const quantity = parseInt(document.getElementById('update-quantity').value);
+            const avgPrice = parseFloat(document.getElementById('update-avg-price').value);
+            const currentPrice = parseFloat(document.getElementById('update-current-price').value);
+
+            if (!symbol || !quantity || !avgPrice) {
+                alert('Please select a symbol and fill in Quantity and Average Price fields.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/rows/update/${symbol}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        Symbol: symbol,
+                        Quantity: quantity,
+                        AvgPrice: avgPrice,
+                        CurrentPrice: currentPrice || 0
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`Position updated: ${symbol}`, 'success');
+                    closeUpdateRowModal();
+                    refreshPositions(); // Refresh the positions table
+                } else {
+                    updateStatus(`Failed to update position: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error updating position:', error);
+                updateStatus('Error updating position', 'error');
+                alert('Error updating position. Please try again.');
+            }
+        }
+
+        // Delete Position Modal Functions
+        function openDeleteRowModal() {
+            const modal = document.getElementById('delete-row-modal');
+            const select = document.getElementById('delete-symbol');
+            
+            // Populate symbol dropdown with current positions
+            select.innerHTML = '<option value="">Select a position to delete...</option>';
+            
+            fetch(`${API_BASE}/positions`)
+                .then(response => response.json())
+                .then(data => {
+                    Object.keys(data.positions).forEach(symbol => {
+                        const option = document.createElement('option');
+                        option.value = symbol;
+                        option.textContent = symbol;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading positions:', error);
+                    updateStatus('Error loading positions for deletion', 'error');
+                });
+            
+            modal.classList.add('show');
+        }
+
+        function closeDeleteRowModal() {
+            document.getElementById('delete-row-modal').classList.remove('show');
+            document.getElementById('delete-symbol').value = '';
+        }
+
+        async function deletePosition() {
+            const symbol = document.getElementById('delete-symbol').value;
+            
+            if (!symbol) {
+                alert('Please select a position to delete.');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete the position for ${symbol}? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/rows/delete/${symbol}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`Position deleted: ${symbol}`, 'success');
+                    closeDeleteRowModal();
+                    refreshPositions(); // Refresh the positions table
+                } else {
+                    updateStatus(`Failed to delete position: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error deleting position:', error);
+                updateStatus('Error deleting position', 'error');
+                alert('Error deleting position. Please try again.');
+            }
+        }
 
         // Expose functions for external C# client testing
         window.TradingInterface = {
