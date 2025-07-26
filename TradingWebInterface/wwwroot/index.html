@@ -213,19 +213,88 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
         
-        .screen-fields {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 20px;
+        /* Console Styles */
+        .console-container {
+            background: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
-        .screen-fields h3 {
-            margin-bottom: 10px;
-            color: #495057;
+        .console-header {
+            background: #2d2d2d;
+            padding: 12px 16px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid #404040;
+        }
+        
+        .console-header h3 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .console-controls {
+            display: flex;
             gap: 8px;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        
+        .console-box {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            padding: 16px;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border: none;
+            resize: none;
+        }
+        
+        .console-box::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .console-box::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+        
+        .console-box::-webkit-scrollbar-thumb {
+            background: #555555;
+            border-radius: 4px;
+        }
+        
+        .console-box::-webkit-scrollbar-thumb:hover {
+            background: #777777;
+        }
+        
+        .console-message {
+            margin-bottom: 4px;
+            color: #00ff00;
+        }
+        
+        .console-message.error {
+            color: #ff6b6b;
+        }
+        
+        .console-message.warning {
+            color: #ffd93d;
+        }
+        
+        .console-message.info {
+            color: #74c0fc;
         }
         
         .field-display {
@@ -554,12 +623,18 @@
             </div>
         </div>
 
-        <!-- Screen Fields Display -->
+        <!-- Console Display -->
         <div class="panel">
-            <div class="screen-fields">
-                <h3>🖥️ Screen Fields (C# GetGUIField/PutGUIField)</h3>
-                <div class="field-display" id="screen-fields-display">
-                    <!-- Fields will be populated by JavaScript -->
+            <div class="console-container">
+                <div class="console-header">
+                    <h3>📟 Trading Console</h3>
+                    <div class="console-controls">
+                        <button class="btn btn-sm btn-secondary" onclick="clearConsole()">🧹 Clear</button>
+                        <button class="btn btn-sm btn-primary" onclick="refreshConsole()">🔄 Refresh</button>
+                    </div>
+                </div>
+                <div class="console-box" id="console-display">
+                    <!-- Console messages will be populated by JavaScript -->
                 </div>
             </div>
         </div>
@@ -715,12 +790,12 @@
             updateTime();
             setInterval(updateTime, 1000);
             
-            // Start auto-refresh of positions and screen fields
+            // Start auto-refresh of positions and console
             refreshPositions();
-            refreshScreenFields();
+            refreshConsole();
             updateInterval = setInterval(() => {
                 refreshPositions();
-                refreshScreenFields();
+                refreshConsole();
             }, 2000); // Update every 2 seconds
             
             // Add event listeners for modal input fields
@@ -961,6 +1036,78 @@
             });
         }
 
+        // Console Display Functions
+        async function refreshConsole() {
+            try {
+                const response = await fetch(`${API_BASE}/console/messages`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateConsoleDisplay(result.messages);
+                } else {
+                    console.error('Failed to refresh console:', result);
+                }
+            } catch (error) {
+                console.error('Error refreshing console:', error);
+            }
+        }
+
+        async function clearConsole() {
+            try {
+                const response = await fetch(`${API_BASE}/console/clear`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateConsoleDisplay([]);
+                    setTimeout(refreshConsole, 100); // Refresh to show "Console cleared" message
+                } else {
+                    console.error('Failed to clear console:', result);
+                }
+            } catch (error) {
+                console.error('Error clearing console:', error);
+            }
+        }
+
+        function updateConsoleDisplay(messages) {
+            const consoleBox = document.getElementById('console-display');
+            
+            if (!messages || messages.length === 0) {
+                consoleBox.textContent = 'Console is empty...';
+                return;
+            }
+            
+            // Join messages with newlines and display
+            consoleBox.textContent = messages.join('\n');
+            
+            // Auto-scroll to bottom
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        async function addConsoleComment(message) {
+            try {
+                const response = await fetch(`${API_BASE}/console/add`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Refresh console to show new message
+                    setTimeout(refreshConsole, 100);
+                } else {
+                    console.error('Failed to add console comment:', result);
+                }
+            } catch (error) {
+                console.error('Error adding console comment:', error);
+            }
+        }
+
         async function refreshScreenFields() {
             try {
                 const fields = await readAllScreenFields();
@@ -1011,6 +1158,273 @@
                 clearInterval(updateInterval);
             }
         });
+
+        // Row Management Functions
+        
+        // Add Position Modal Functions
+        function openAddRowModal() {
+            document.getElementById('add-row-modal').classList.add('show');
+            document.getElementById('add-symbol').focus();
+        }
+
+        function closeAddRowModal() {
+            document.getElementById('add-row-modal').classList.remove('show');
+            // Clear form
+            document.getElementById('add-symbol').value = '';
+            document.getElementById('add-quantity').value = '';
+            document.getElementById('add-avg-price').value = '';
+            document.getElementById('add-current-price').value = '';
+        }
+
+        async function addPosition() {
+            const symbol = document.getElementById('add-symbol').value.trim().toUpperCase();
+            const quantity = parseInt(document.getElementById('add-quantity').value);
+            const avgPrice = parseFloat(document.getElementById('add-avg-price').value);
+            const currentPrice = parseFloat(document.getElementById('add-current-price').value) || avgPrice;
+
+            if (!symbol || !quantity || !avgPrice) {
+                alert('Please fill in Symbol, Quantity, and Average Price fields.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/rows/add`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        Symbol: symbol,
+                        Quantity: quantity,
+                        AvgPrice: avgPrice,
+                        CurrentPrice: currentPrice
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`Position added: ${symbol}`, 'success');
+                    closeAddRowModal();
+                    refreshPositions(); // Refresh the positions table
+                } else {
+                    updateStatus(`Failed to add position: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error adding position:', error);
+                updateStatus('Error adding position', 'error');
+                alert('Error adding position. Please try again.');
+            }
+        }
+
+        // Update Position Modal Functions
+        function openUpdateRowModal() {
+            const modal = document.getElementById('update-row-modal');
+            const select = document.getElementById('update-symbol');
+            
+            // Populate symbol dropdown with current positions
+            select.innerHTML = '<option value="">Select a position to update...</option>';
+            
+            fetch(`${API_BASE}/positions`)
+                .then(response => response.json())
+                .then(data => {
+                    Object.keys(data.positions).forEach(symbol => {
+                        const option = document.createElement('option');
+                        option.value = symbol;
+                        option.textContent = symbol;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading positions:', error);
+                    updateStatus('Error loading positions for update', 'error');
+                });
+            
+            modal.classList.add('show');
+        }
+
+        function closeUpdateRowModal() {
+            document.getElementById('update-row-modal').classList.remove('show');
+            // Clear form
+            document.getElementById('update-symbol').value = '';
+            document.getElementById('update-quantity').value = '';
+            document.getElementById('update-avg-price').value = '';
+            document.getElementById('update-current-price').value = '';
+        }
+
+        function loadPositionForUpdate() {
+            const symbol = document.getElementById('update-symbol').value;
+            if (!symbol) return;
+
+            fetch(`${API_BASE}/positions`)
+                .then(response => response.json())
+                .then(data => {
+                    const position = data.positions[symbol];
+                    if (position) {
+                        document.getElementById('update-quantity').value = position.quantity;
+                        document.getElementById('update-avg-price').value = position.avgPrice.toFixed(2);
+                        document.getElementById('update-current-price').value = position.currentPrice.toFixed(2);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading position details:', error);
+                    updateStatus('Error loading position details', 'error');
+                });
+        }
+
+        async function updatePosition() {
+            const symbol = document.getElementById('update-symbol').value;
+            const quantity = parseInt(document.getElementById('update-quantity').value);
+            const avgPrice = parseFloat(document.getElementById('update-avg-price').value);
+            const currentPrice = parseFloat(document.getElementById('update-current-price').value);
+
+            if (!symbol || !quantity || !avgPrice) {
+                alert('Please select a symbol and fill in Quantity and Average Price fields.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/rows/update/${symbol}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        Symbol: symbol,
+                        Quantity: quantity,
+                        AvgPrice: avgPrice,
+                        CurrentPrice: currentPrice || 0
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`Position updated: ${symbol}`, 'success');
+                    closeUpdateRowModal();
+                    refreshPositions(); // Refresh the positions table
+                } else {
+                    updateStatus(`Failed to update position: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error updating position:', error);
+                updateStatus('Error updating position', 'error');
+                alert('Error updating position. Please try again.');
+            }
+        }
+
+        // Delete Position Modal Functions
+        function openDeleteRowModal() {
+            const modal = document.getElementById('delete-row-modal');
+            const select = document.getElementById('delete-symbol');
+            
+            // Populate symbol dropdown with current positions
+            select.innerHTML = '<option value="">Select a position to delete...</option>';
+            
+            fetch(`${API_BASE}/positions`)
+                .then(response => response.json())
+                .then(data => {
+                    Object.keys(data.positions).forEach(symbol => {
+                        const option = document.createElement('option');
+                        option.value = symbol;
+                        option.textContent = symbol;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading positions:', error);
+                    updateStatus('Error loading positions for deletion', 'error');
+                });
+            
+            modal.classList.add('show');
+        }
+
+        function closeDeleteRowModal() {
+            document.getElementById('delete-row-modal').classList.remove('show');
+            document.getElementById('delete-symbol').value = '';
+        }
+
+        async function deletePosition() {
+            const symbol = document.getElementById('delete-symbol').value;
+            
+            if (!symbol) {
+                alert('Please select a position to delete.');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete the position for ${symbol}? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/rows/delete/${symbol}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`Position deleted: ${symbol}`, 'success');
+                    closeDeleteRowModal();
+                    refreshPositions(); // Refresh the positions table
+                } else {
+                    updateStatus(`Failed to delete position: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error deleting position:', error);
+                updateStatus('Error deleting position', 'error');
+                alert('Error deleting position. Please try again.');
+            }
+        }
+
+        // Toggle Functions for LIVE and FLATTEN fields
+        
+        async function toggleLive(symbol) {
+            try {
+                const response = await fetch(`${API_BASE}/rows/toggle-live/${symbol}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`LIVE toggled for ${symbol}`, 'success');
+                    refreshPositions(); // Refresh the positions table to show updated state
+                } else {
+                    updateStatus(`Failed to toggle LIVE: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error toggling LIVE:', error);
+                updateStatus('Error toggling LIVE', 'error');
+                alert('Error toggling LIVE. Please try again.');
+            }
+        }
+
+        async function toggleFlatten(symbol) {
+            try {
+                const response = await fetch(`${API_BASE}/rows/toggle-flatten/${symbol}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`FLATTEN toggled for ${symbol}`, 'success');
+                    refreshPositions(); // Refresh the positions table to show updated state
+                } else {
+                    updateStatus(`Failed to toggle FLATTEN: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error toggling FLATTEN:', error);
+                updateStatus('Error toggling FLATTEN', 'error');
+                alert('Error toggling FLATTEN. Please try again.');
+            }
+        }
 
         // Row Management Functions
         

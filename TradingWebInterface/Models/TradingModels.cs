@@ -87,13 +87,31 @@ namespace TradingWebInterface.Models
     }
 
     /// <summary>
-    /// Command response model
+    /// Response model for API operations
     /// </summary>
     public class CommandResponse
     {
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
         public object? Data { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for adding comments to console
+    /// </summary>
+    public class AddCommentRequest
+    {
+        public string Message { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Response model for console messages
+    /// </summary>
+    public class ConsoleResponse
+    {
+        public bool Success { get; set; }
+        public List<string> Messages { get; set; } = new List<string>();
+        public int Count { get; set; }
     }
 }
 

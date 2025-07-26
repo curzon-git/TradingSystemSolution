@@ -1,3 +1,5 @@
+using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 
 namespace ClientExample
@@ -269,6 +271,41 @@ namespace ClientExample
             }
         }
 
+        /// <summary>
+        /// AddComment - Add a comment/message to the console
+        /// Usage: var success = await client.AddComment("Order executed successfully");
+        /// </summary>
+        public async Task<bool> AddComment(string message)
+        {
+            try
+            {
+                var requestBody = new { Message = message };
+                var json = JsonSerializer.Serialize(requestBody);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                
+                var response = await _httpClient.PostAsync($"{_baseUrl}/api/trading/console/add", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<CommandResponse>(responseJson);
+                    Console.WriteLine($"AddComment result: {result?.Message}");
+                    return result?.Success ?? false;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error adding comment: {response.StatusCode} - {errorContent}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception adding comment: {ex.Message}");
+                return false;
+            }
+        }
+
         public void Dispose()
         {
             _httpClient?.Dispose();
@@ -425,6 +462,21 @@ namespace ClientExample
                 Console.WriteLine($"   DeleteRow(TSLA) = {deleteResult}");
                 Console.WriteLine();
 
+                // Demonstrate Console API
+                Console.WriteLine("6. Testing Console API (AddComment):");
+                Console.WriteLine();
+                
+                Console.WriteLine("   6a. Adding comments to console:");
+                bool comment1 = await client.AddComment("Trading session started");
+                Console.WriteLine($"   AddComment('Trading session started') = {comment1}");
+                
+                bool comment2 = await client.AddComment("Portfolio analysis completed");
+                Console.WriteLine($"   AddComment('Portfolio analysis completed') = {comment2}");
+                
+                bool comment3 = await client.AddComment("Risk management rules applied");
+                Console.WriteLine($"   AddComment('Risk management rules applied') = {comment3}");
+                Console.WriteLine();
+
                 Console.WriteLine("=== Demo completed successfully! ===");
                 Console.WriteLine();
                 Console.WriteLine("Your requested APIs are working perfectly:");
@@ -438,6 +490,8 @@ namespace ClientExample
                 Console.WriteLine("✅ ToggleFlatten(string symbol) - NEW!");
                 Console.WriteLine("✅ LIVE field toggle buttons (ON/OFF) - NEW!");
                 Console.WriteLine("✅ FLATTEN field toggle buttons (TRUE/FALSE) - NEW!");
+                Console.WriteLine("✅ AddComment(string message) - NEW!");
+                Console.WriteLine("✅ Console-style text box for messages - NEW!");
                 Console.WriteLine("✅ Multi-machine web access");
                 Console.WriteLine("✅ Direct integration with your C# trading system");
             }

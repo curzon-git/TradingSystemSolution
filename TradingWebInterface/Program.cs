@@ -23,6 +23,7 @@ namespace TradingWebInterface
             // Register your trading system service
             builder.Services.AddSingleton<ITradingSystemService, TradingSystemService>();
             builder.Services.AddSingleton<ScreenFieldManager>();
+            builder.Services.AddSingleton<IConsoleService, ConsoleService>();
 
             var app = builder.Build();
 
