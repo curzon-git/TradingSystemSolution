@@ -26,7 +26,7 @@ namespace TradingWebInterface.Services
                     Quantity = 100, 
                     AvgPrice = 150.25m, 
                     CurrentPrice = 155.30m,
-                    Live = "ON",
+                    Live = "OFF",
                     Flatten = false
                 },
                 ["GOOGL"] = new Position 
@@ -122,7 +122,9 @@ namespace TradingWebInterface.Services
                             Symbol = order.Symbol,
                             Quantity = newQuantity,
                             AvgPrice = Math.Abs(totalCost / newQuantity),
-                            CurrentPrice = order.Price
+                            CurrentPrice = order.Price,
+                            Live = existingPos.Live,
+                            Flatten = existingPos.Flatten
                         };
                     }
                 }
@@ -418,14 +420,25 @@ namespace TradingWebInterface.Services
                     };
                 }
 
-                // Toggle the LIVE field
-                var position = _positions[symbol];
-                position.Live = position.Live == "ON" ? "OFF" : "ON";
+                // Get the current position and toggle the LIVE field
+                var currentPosition = _positions[symbol];
+                var newLiveValue = currentPosition.Live == "ON" ? "OFF" : "ON";
+                
+                // Create a new position object with the toggled LIVE value
+                _positions[symbol] = new Position
+                {
+                    Symbol = currentPosition.Symbol,
+                    Quantity = currentPosition.Quantity,
+                    AvgPrice = currentPosition.AvgPrice,
+                    CurrentPrice = currentPosition.CurrentPrice,
+                    Live = newLiveValue,
+                    Flatten = currentPosition.Flatten
+                };
 
                 return new OrderResult
                 {
                     Success = true,
-                    Message = $"LIVE toggled for {symbol}: {position.Live}",
+                    Message = $"LIVE toggled for {symbol}: {newLiveValue}",
                     OrderId = Guid.NewGuid().ToString("N")[..8].ToUpper()
                 };
             }
@@ -466,14 +479,25 @@ namespace TradingWebInterface.Services
                     };
                 }
 
-                // Toggle the FLATTEN field
-                var position = _positions[symbol];
-                position.Flatten = !position.Flatten;
+                // Get the current position and toggle the FLATTEN field
+                var currentPosition = _positions[symbol];
+                var newFlattenValue = !currentPosition.Flatten;
+                
+                // Create a new position object with the toggled FLATTEN value
+                _positions[symbol] = new Position
+                {
+                    Symbol = currentPosition.Symbol,
+                    Quantity = currentPosition.Quantity,
+                    AvgPrice = currentPosition.AvgPrice,
+                    CurrentPrice = currentPosition.CurrentPrice,
+                    Live = currentPosition.Live,
+                    Flatten = newFlattenValue
+                };
 
                 return new OrderResult
                 {
                     Success = true,
-                    Message = $"FLATTEN toggled for {symbol}: {position.Flatten}",
+                    Message = $"FLATTEN toggled for {symbol}: {newFlattenValue}",
                     OrderId = Guid.NewGuid().ToString("N")[..8].ToUpper()
                 };
             }
