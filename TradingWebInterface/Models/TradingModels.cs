@@ -11,6 +11,16 @@ namespace TradingWebInterface.Models
         public decimal CurrentPrice { get; set; }
         public decimal PnL => (CurrentPrice - AvgPrice) * Quantity;
         public decimal PnLPercent => AvgPrice != 0 ? (PnL / (AvgPrice * Math.Abs(Quantity))) * 100 : 0;
+        
+        /// <summary>
+        /// LIVE field - can be "ON" or "OFF"
+        /// </summary>
+        public string Live { get; set; } = "OFF";
+        
+        /// <summary>
+        /// FLATTEN field - can be TRUE or FALSE
+        /// </summary>
+        public bool Flatten { get; set; } = false;
     }
 
     /// <summary>

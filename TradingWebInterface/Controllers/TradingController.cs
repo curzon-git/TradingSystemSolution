@@ -509,6 +509,128 @@ namespace TradingWebInterface.Controllers
             }
         }
 
+        /// <summary>
+        /// Toggle LIVE field for a position between "ON" and "OFF"
+        /// POST /api/trading/rows/toggle-live/{symbol}
+        /// </summary>
+        [HttpPost("rows/toggle-live/{symbol}")]
+        public async Task<ActionResult<CommandResponse>> ToggleLive(string symbol)
+        {
+            try
+            {
+                _logger.LogInformation("ToggleLive called for symbol: {Symbol}", symbol);
+
+                if (string.IsNullOrEmpty(symbol))
+                {
+                    return BadRequest(new CommandResponse
+                    {
+                        Success = false,
+                        Message = "Symbol is required"
+                    });
+                }
+
+                // Toggle the LIVE field through the trading system
+                var result = await _tradingSystem.ToggleLiveAsync(symbol);
+                
+                if (result.Success)
+                {
+                    _screenFields.UpdateStatus($"LIVE toggled for {symbol}");
+                    _screenFields.UpdateLastCommand($"TOGGLE_LIVE_{symbol}");
+                    
+                    _logger.LogInformation("LIVE toggled successfully for {Symbol}", symbol);
+                }
+                else
+                {
+                    _screenFields.UpdateStatus($"Failed to toggle LIVE: {result.Message}");
+                    _screenFields.UpdateLastCommand("TOGGLE_LIVE_FAILED");
+                    
+                    _logger.LogWarning("Failed to toggle LIVE for {Symbol}: {Message}", symbol, result.Message);
+                }
+
+                return Ok(new CommandResponse
+                {
+                    Success = result.Success,
+                    Message = result.Message,
+                    Data = new { Symbol = symbol }
+                });
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Toggle LIVE error: {ex.Message}";
+                _screenFields.UpdateStatus(errorMsg);
+                _screenFields.UpdateLastCommand("TOGGLE_LIVE_ERROR");
+                
+                _logger.LogError(ex, "Error in ToggleLive for symbol {Symbol}", symbol);
+                
+                return StatusCode(500, new CommandResponse
+                {
+                    Success = false,
+                    Message = errorMsg
+                });
+            }
+        }
+
+        /// <summary>
+        /// Toggle FLATTEN field for a position between TRUE and FALSE
+        /// POST /api/trading/rows/toggle-flatten/{symbol}
+        /// </summary>
+        [HttpPost("rows/toggle-flatten/{symbol}")]
+        public async Task<ActionResult<CommandResponse>> ToggleFlatten(string symbol)
+        {
+            try
+            {
+                _logger.LogInformation("ToggleFlatten called for symbol: {Symbol}", symbol);
+
+                if (string.IsNullOrEmpty(symbol))
+                {
+                    return BadRequest(new CommandResponse
+                    {
+                        Success = false,
+                        Message = "Symbol is required"
+                    });
+                }
+
+                // Toggle the FLATTEN field through the trading system
+                var result = await _tradingSystem.ToggleFlattenAsync(symbol);
+                
+                if (result.Success)
+                {
+                    _screenFields.UpdateStatus($"FLATTEN toggled for {symbol}");
+                    _screenFields.UpdateLastCommand($"TOGGLE_FLATTEN_{symbol}");
+                    
+                    _logger.LogInformation("FLATTEN toggled successfully for {Symbol}", symbol);
+                }
+                else
+                {
+                    _screenFields.UpdateStatus($"Failed to toggle FLATTEN: {result.Message}");
+                    _screenFields.UpdateLastCommand("TOGGLE_FLATTEN_FAILED");
+                    
+                    _logger.LogWarning("Failed to toggle FLATTEN for {Symbol}: {Message}", symbol, result.Message);
+                }
+
+                return Ok(new CommandResponse
+                {
+                    Success = result.Success,
+                    Message = result.Message,
+                    Data = new { Symbol = symbol }
+                });
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Toggle FLATTEN error: {ex.Message}";
+                _screenFields.UpdateStatus(errorMsg);
+                _screenFields.UpdateLastCommand("TOGGLE_FLATTEN_ERROR");
+                
+                _logger.LogError(ex, "Error in ToggleFlatten for symbol {Symbol}", symbol);
+                
+                return StatusCode(500, new CommandResponse
+                {
+                    Success = false,
+                    Message = errorMsg
+                });
+            }
+        }
+
         #endregion
 
         #region Trading Data APIs

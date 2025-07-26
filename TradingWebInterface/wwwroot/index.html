@@ -175,6 +175,44 @@
             background: #5a6268;
         }
         
+        /* Toggle Button Styles */
+        .toggle-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 11px;
+            transition: all 0.3s ease;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .toggle-btn.live-on {
+            background: #28a745;
+            color: white;
+        }
+        
+        .toggle-btn.live-off {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .toggle-btn.flatten-true {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .toggle-btn.flatten-false {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .toggle-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
         .screen-fields {
             background: #f8f9fa;
             padding: 15px;
@@ -503,11 +541,13 @@
                             <th>Current Price</th>
                             <th>P&L</th>
                             <th>P&L %</th>
+                            <th>LIVE</th>
+                            <th>FLATTEN</th>
                         </tr>
                     </thead>
                     <tbody id="positions-tbody">
                         <tr>
-                            <td colspan="6" style="text-align: center; color: #6c757d;">Loading positions...</td>
+                            <td colspan="8" style="text-align: center; color: #6c757d;">Loading positions...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -874,7 +914,7 @@
             // Update positions table
             const tbody = document.getElementById('positions-tbody');
             if (Object.keys(data.positions).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6c757d;">No positions - Double-click any row to start trading</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6c757d;">No positions - Double-click any row to start trading</td></tr>';
                 return;
             }
 
@@ -883,6 +923,14 @@
                 const row = document.createElement('tr');
                 const pnlClass = position.pnL >= 0 ? 'positive' : 'negative';
                 
+                // Create LIVE toggle button
+                const liveButtonClass = position.live === 'ON' ? 'live-on' : 'live-off';
+                const liveButtonText = position.live === 'ON' ? 'ON' : 'OFF';
+                
+                // Create FLATTEN toggle button
+                const flattenButtonClass = position.flatten ? 'flatten-true' : 'flatten-false';
+                const flattenButtonText = position.flatten ? 'TRUE' : 'FALSE';
+                
                 row.innerHTML = `
                     <td><strong>${position.symbol}</strong></td>
                     <td>${position.quantity}</td>
@@ -890,6 +938,8 @@
                     <td>$${position.currentPrice.toFixed(2)}</td>
                     <td class="${pnlClass}">$${position.pnL.toFixed(2)}</td>
                     <td class="${pnlClass}">${position.pnLPercent.toFixed(2)}%</td>
+                    <td><button class="toggle-btn ${liveButtonClass}" onclick="toggleLive('${position.symbol}')">${liveButtonText}</button></td>
+                    <td><button class="toggle-btn ${flattenButtonClass}" onclick="toggleFlatten('${position.symbol}')">${flattenButtonText}</button></td>
                 `;
                 
                 // Add row interaction events
@@ -961,6 +1011,48 @@
                 clearInterval(updateInterval);
             }
         });
+
+        // Row Management Functions
+        
+        // Add Position Modal Functions
+        function openAddRowModal() {
+            document.getElementById('add-row-modal').classList.add('show');
+            document.getElementById('add-symbol').focus();
+        }
+
+        function closeAddRowModal() {
+            document.getElementById('add-row-modal').classList.remove('show');
+            // Clear form
+            document.getElementById('add-symbol').value = '';
+            document.getElementById('add-quantity').value = '';
+            document.getElementById('add-avg-price').value = '';
+            document.getElementById('add-current-price').value = '';
+        }
+
+        async function addPosition() {
+            const symbol = document.getElementById('add-symbol').value.trim().toUpperCase();
+            const quantity = parseInt(document.getElementById('add-quantity').value);
+            const avgPrice = parseFloat(document.getElementById('add-avg-price').value);
+            const currentPrice = parseFloat(document.getElementById('add-current-price').value) || avgPrice;
+
+            if (!symbol || !quantity || !avgPrice) {
+                alert('Please fill in Symbol, Quantity, and Average Price fields.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/rows/add`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        Symbol: symbol,
+                        Quantity: quantity,
+                        AvgPrice: avgPrice,
+                        CurrentPrice: currentPrice
+                    })
+                });
 
         // Row Management Functions
         
@@ -1180,6 +1272,52 @@
                 console.error('Error deleting position:', error);
                 updateStatus('Error deleting position', 'error');
                 alert('Error deleting position. Please try again.');
+            }
+        }
+
+        // Toggle Functions for LIVE and FLATTEN fields
+        
+        async function toggleLive(symbol) {
+            try {
+                const response = await fetch(`${API_BASE}/rows/toggle-live/${symbol}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`LIVE toggled for ${symbol}`, 'success');
+                    refreshPositions(); // Refresh the positions table to show updated state
+                } else {
+                    updateStatus(`Failed to toggle LIVE: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error toggling LIVE:', error);
+                updateStatus('Error toggling LIVE', 'error');
+                alert('Error toggling LIVE. Please try again.');
+            }
+        }
+
+        async function toggleFlatten(symbol) {
+            try {
+                const response = await fetch(`${API_BASE}/rows/toggle-flatten/${symbol}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus(`FLATTEN toggled for ${symbol}`, 'success');
+                    refreshPositions(); // Refresh the positions table to show updated state
+                } else {
+                    updateStatus(`Failed to toggle FLATTEN: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error toggling FLATTEN:', error);
+                updateStatus('Error toggling FLATTEN', 'error');
+                alert('Error toggling FLATTEN. Please try again.');
             }
         }
 

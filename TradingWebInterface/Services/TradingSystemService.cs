@@ -25,21 +25,27 @@ namespace TradingWebInterface.Services
                     Symbol = "AAPL", 
                     Quantity = 100, 
                     AvgPrice = 150.25m, 
-                    CurrentPrice = 155.30m 
+                    CurrentPrice = 155.30m,
+                    Live = "ON",
+                    Flatten = false
                 },
                 ["GOOGL"] = new Position 
                 { 
                     Symbol = "GOOGL", 
                     Quantity = -50, 
                     AvgPrice = 2800.00m, 
-                    CurrentPrice = 2795.50m 
+                    CurrentPrice = 2795.50m,
+                    Live = "OFF",
+                    Flatten = true
                 },
                 ["MSFT"] = new Position 
                 { 
                     Symbol = "MSFT", 
                     Quantity = 200, 
                     AvgPrice = 380.75m, 
-                    CurrentPrice = 385.20m 
+                    CurrentPrice = 385.20m,
+                    Live = "ON",
+                    Flatten = false
                 }
             };
 
@@ -226,13 +232,21 @@ namespace TradingWebInterface.Services
                     position.CurrentPrice = position.AvgPrice;
                 }
 
+                // Set default values for new fields if not provided
+                if (string.IsNullOrEmpty(position.Live) || (position.Live != "ON" && position.Live != "OFF"))
+                {
+                    position.Live = "OFF";
+                }
+
                 // Add the new position
                 _positions[position.Symbol] = new Position
                 {
                     Symbol = position.Symbol,
                     Quantity = position.Quantity,
                     AvgPrice = position.AvgPrice,
-                    CurrentPrice = position.CurrentPrice
+                    CurrentPrice = position.CurrentPrice,
+                    Live = position.Live,
+                    Flatten = position.Flatten
                 };
 
                 return new OrderResult
@@ -343,13 +357,21 @@ namespace TradingWebInterface.Services
                     position.CurrentPrice = existingPosition.CurrentPrice;
                 }
 
+                // Validate and set LIVE field
+                if (string.IsNullOrEmpty(position.Live) || (position.Live != "ON" && position.Live != "OFF"))
+                {
+                    position.Live = existingPosition.Live; // Preserve existing value
+                }
+
                 // Update the position
                 _positions[symbol] = new Position
                 {
                     Symbol = symbol,
                     Quantity = position.Quantity,
                     AvgPrice = position.AvgPrice,
-                    CurrentPrice = position.CurrentPrice
+                    CurrentPrice = position.CurrentPrice,
+                    Live = position.Live,
+                    Flatten = position.Flatten
                 };
 
                 return new OrderResult
@@ -365,6 +387,102 @@ namespace TradingWebInterface.Services
                 {
                     Success = false,
                     Message = $"Failed to update position: {ex.Message}",
+                    OrderId = string.Empty
+                };
+            }
+        }
+
+        /// <summary>
+        /// Toggle the LIVE field for a position between "ON" and "OFF"
+        /// </summary>
+        public async Task<OrderResult> ToggleLiveAsync(string symbol)
+        {
+            // TODO: Replace with call to your trading system
+            // Example: return await YourTradingSystem.ToggleLiveAsync(symbol);
+            
+            await Task.Delay(50); // Simulate processing time
+            
+            try
+            {
+                if (string.IsNullOrEmpty(symbol))
+                    throw new ArgumentException("Symbol is required");
+
+                // Check if position exists
+                if (!_positions.ContainsKey(symbol))
+                {
+                    return new OrderResult
+                    {
+                        Success = false,
+                        Message = $"Position for {symbol} not found",
+                        OrderId = string.Empty
+                    };
+                }
+
+                // Toggle the LIVE field
+                var position = _positions[symbol];
+                position.Live = position.Live == "ON" ? "OFF" : "ON";
+
+                return new OrderResult
+                {
+                    Success = true,
+                    Message = $"LIVE toggled for {symbol}: {position.Live}",
+                    OrderId = Guid.NewGuid().ToString("N")[..8].ToUpper()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new OrderResult
+                {
+                    Success = false,
+                    Message = $"Failed to toggle LIVE for {symbol}: {ex.Message}",
+                    OrderId = string.Empty
+                };
+            }
+        }
+
+        /// <summary>
+        /// Toggle the FLATTEN field for a position between TRUE and FALSE
+        /// </summary>
+        public async Task<OrderResult> ToggleFlattenAsync(string symbol)
+        {
+            // TODO: Replace with call to your trading system
+            // Example: return await YourTradingSystem.ToggleFlattenAsync(symbol);
+            
+            await Task.Delay(50); // Simulate processing time
+            
+            try
+            {
+                if (string.IsNullOrEmpty(symbol))
+                    throw new ArgumentException("Symbol is required");
+
+                // Check if position exists
+                if (!_positions.ContainsKey(symbol))
+                {
+                    return new OrderResult
+                    {
+                        Success = false,
+                        Message = $"Position for {symbol} not found",
+                        OrderId = string.Empty
+                    };
+                }
+
+                // Toggle the FLATTEN field
+                var position = _positions[symbol];
+                position.Flatten = !position.Flatten;
+
+                return new OrderResult
+                {
+                    Success = true,
+                    Message = $"FLATTEN toggled for {symbol}: {position.Flatten}",
+                    OrderId = Guid.NewGuid().ToString("N")[..8].ToUpper()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new OrderResult
+                {
+                    Success = false,
+                    Message = $"Failed to toggle FLATTEN for {symbol}: {ex.Message}",
                     OrderId = string.Empty
                 };
             }
