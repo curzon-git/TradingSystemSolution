@@ -117,8 +117,8 @@ namespace TradingWebInterface.Services
                             Quantity = newQuantity,
                             AvgPrice = Math.Abs(totalCost / newQuantity),
                             CurrentPrice = order.Price,
-                            Live = existingPos.Live,
-                            Flatten = existingPos.Flatten
+                            //Live = existingPos.Live,
+                            //Flatten = existingPos.Flatten
                         };
                     }
                 }
