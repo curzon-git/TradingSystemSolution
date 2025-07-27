@@ -52,16 +52,6 @@ namespace TradingWebInterface.Services
         /// Update an existing position (row) in the system
         /// </summary>
         Task<OrderResult> UpdatePositionAsync(string symbol, Position position);
-
-        /// <summary>
-        /// Toggle the LIVE field for a position between "ON" and "OFF"
-        /// </summary>
-        Task<OrderResult> ToggleLiveAsync(string symbol);
-
-        /// <summary>
-        /// Toggle the FLATTEN field for a position between TRUE and FALSE
-        /// </summary>
-        Task<OrderResult> ToggleFlattenAsync(string symbol);
     }
 }
 
