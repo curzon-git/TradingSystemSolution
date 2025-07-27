@@ -52,6 +52,16 @@ namespace TradingWebInterface.Services
         /// Update an existing position (row) in the system
         /// </summary>
         Task<OrderResult> UpdatePositionAsync(string symbol, Position position);
+
+        /// <summary>
+        /// Toggle the Live field for a position
+        /// </summary>
+        Task<OrderResult> ToggleLiveAsync(string symbol);
+
+        /// <summary>
+        /// Toggle the Flatten field for a position
+        /// </summary>
+        Task<OrderResult> ToggleFlattenAsync(string symbol);
     }
 }
 

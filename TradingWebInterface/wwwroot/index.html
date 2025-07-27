@@ -175,6 +175,43 @@
             background: #5a6268;
         }
         
+        /* Toggle Button Styles */
+        .toggle-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 40px;
+        }
+        
+        .toggle-btn.live-on {
+            background: #28a745;
+            color: white;
+        }
+        
+        .toggle-btn.live-off {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .toggle-btn.flatten-true {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .toggle-btn.flatten-false {
+            background: #007bff;
+            color: white;
+        }
+        
+        .toggle-btn:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+        
         .screen-fields {
             background: #f8f9fa;
             padding: 15px;
@@ -571,11 +608,13 @@
                             <th>Current Price</th>
                             <th>P&L</th>
                             <th>P&L %</th>
+                            <th>LIVE</th>
+                            <th>FLATTEN</th>
                         </tr>
                     </thead>
                     <tbody id="positions-tbody">
                         <tr>
-                            <td colspan="6" style="text-align: center; color: #6c757d;">Loading positions...</td>
+                            <td colspan="8" style="text-align: center; color: #6c757d;">Loading positions...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -948,7 +987,7 @@
             // Update positions table
             const tbody = document.getElementById('positions-tbody');
             if (Object.keys(data.positions).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6c757d;">No positions - Double-click any row to start trading</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6c757d;">No positions - Double-click any row to start trading</td></tr>';
                 return;
             }
 
@@ -957,6 +996,12 @@
                 const row = document.createElement('tr');
                 const pnlClass = position.pnL >= 0 ? 'positive' : 'negative';
                 
+                // Toggle button classes and text
+                const liveButtonClass = position.live === "ON" ? "live-on" : "live-off";
+                const liveButtonText = position.live === "ON" ? "ON" : "OFF";
+                const flattenButtonClass = position.flatten ? "flatten-true" : "flatten-false";
+                const flattenButtonText = position.flatten ? "TRUE" : "FALSE";
+                
                 row.innerHTML = `
                     <td><strong>${position.symbol}</strong></td>
                     <td>${position.quantity}</td>
@@ -964,6 +1009,8 @@
                     <td>$${position.currentPrice.toFixed(2)}</td>
                     <td class="${pnlClass}">$${position.pnL.toFixed(2)}</td>
                     <td class="${pnlClass}">${position.pnLPercent.toFixed(2)}%</td>
+                    <td><button class="toggle-btn ${liveButtonClass}" onclick="toggleLive('${position.symbol}')">${liveButtonText}</button></td>
+                    <td><button class="toggle-btn ${flattenButtonClass}" onclick="toggleFlatten('${position.symbol}')">${flattenButtonText}</button></td>
                 `;
                 
                 // Add row interaction events
@@ -1401,6 +1448,63 @@
             }
         }
 
+        // Toggle Functions
+        async function toggleLive(symbol) {
+            try {
+                const response = await fetch(`/api/trading/rows/toggle-live/${symbol}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log(`Live toggled for ${symbol}:`, result.message);
+                    updateStatus(result.message, 'success');
+                    // Refresh positions to show updated state
+                    refreshPositions();
+                } else {
+                    console.error(`Failed to toggle Live for ${symbol}:`, result.message);
+                    updateStatus(`Failed to toggle Live: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error toggling Live:', error);
+                updateStatus('Error toggling Live', 'error');
+                alert('Error toggling Live. Please try again.');
+            }
+        }
+
+        async function toggleFlatten(symbol) {
+            try {
+                const response = await fetch(`/api/trading/rows/toggle-flatten/${symbol}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log(`Flatten toggled for ${symbol}:`, result.message);
+                    updateStatus(result.message, 'success');
+                    // Refresh positions to show updated state
+                    refreshPositions();
+                } else {
+                    console.error(`Failed to toggle Flatten for ${symbol}:`, result.message);
+                    updateStatus(`Failed to toggle Flatten: ${result.message}`, 'error');
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error toggling Flatten:', error);
+                updateStatus('Error toggling Flatten', 'error');
+                alert('Error toggling Flatten. Please try again.');
+            }
+        }
+
         // Expose functions for external C# client testing
         window.TradingInterface = {
             GetGUIField: readScreenField,
@@ -1408,7 +1512,9 @@
             GetAllGUIFields: readAllScreenFields,
             OpenOrderModal: openOrderModal,
             CloseOrderModal: closeOrderModal,
-            RefreshPositions: refreshPositions
+            RefreshPositions: refreshPositions,
+            ToggleLive: toggleLive,
+            ToggleFlatten: toggleFlatten
         };
     </script>
 </body>

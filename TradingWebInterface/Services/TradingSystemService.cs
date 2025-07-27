@@ -25,21 +25,27 @@ namespace TradingWebInterface.Services
                     Symbol = "AAPL", 
                     Quantity = 100, 
                     AvgPrice = 150.25m, 
-                    CurrentPrice = 155.30m 
+                    CurrentPrice = 155.30m,
+                    Live = "OFF",
+                    Flatten = false
                 },
                 ["GOOGL"] = new Position 
                 { 
                     Symbol = "GOOGL", 
                     Quantity = -50, 
                     AvgPrice = 2800.00m, 
-                    CurrentPrice = 2795.50m 
+                    CurrentPrice = 2795.50m,
+                    Live = "ON",
+                    Flatten = false
                 },
                 ["MSFT"] = new Position 
                 { 
                     Symbol = "MSFT", 
                     Quantity = 200, 
                     AvgPrice = 380.75m, 
-                    CurrentPrice = 385.20m 
+                    CurrentPrice = 385.20m,
+                    Live = "OFF",
+                    Flatten = true
                 }
             };
 
@@ -117,8 +123,8 @@ namespace TradingWebInterface.Services
                             Quantity = newQuantity,
                             AvgPrice = Math.Abs(totalCost / newQuantity),
                             CurrentPrice = order.Price,
-                            //Live = existingPos.Live,
-                            //Flatten = existingPos.Flatten
+                            Live = existingPos.Live,
+                            Flatten = existingPos.Flatten
                         };
                     }
                 }
@@ -367,6 +373,98 @@ namespace TradingWebInterface.Services
                 {
                     Success = false,
                     Message = $"Failed to update position: {ex.Message}",
+                    OrderId = string.Empty
+                };
+            }
+        }
+
+        public async Task<OrderResult> ToggleLiveAsync(string symbol)
+        {
+            try
+            {
+                if (!_positions.ContainsKey(symbol))
+                {
+                    return new OrderResult
+                    {
+                        Success = false,
+                        Message = $"Position not found for symbol: {symbol}",
+                        OrderId = string.Empty
+                    };
+                }
+
+                // Create new position object with toggled Live value
+                var currentPosition = _positions[symbol];
+                var newLiveValue = currentPosition.Live == "ON" ? "OFF" : "ON";
+
+                _positions[symbol] = new Position
+                {
+                    Symbol = currentPosition.Symbol,
+                    Quantity = currentPosition.Quantity,
+                    AvgPrice = currentPosition.AvgPrice,
+                    CurrentPrice = currentPosition.CurrentPrice,
+                    Live = newLiveValue,
+                    Flatten = currentPosition.Flatten
+                };
+
+                return new OrderResult
+                {
+                    Success = true,
+                    Message = $"Live toggled to {newLiveValue} for {symbol}",
+                    OrderId = Guid.NewGuid().ToString()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new OrderResult
+                {
+                    Success = false,
+                    Message = $"Failed to toggle Live: {ex.Message}",
+                    OrderId = string.Empty
+                };
+            }
+        }
+
+        public async Task<OrderResult> ToggleFlattenAsync(string symbol)
+        {
+            try
+            {
+                if (!_positions.ContainsKey(symbol))
+                {
+                    return new OrderResult
+                    {
+                        Success = false,
+                        Message = $"Position not found for symbol: {symbol}",
+                        OrderId = string.Empty
+                    };
+                }
+
+                // Create new position object with toggled Flatten value
+                var currentPosition = _positions[symbol];
+                var newFlattenValue = !currentPosition.Flatten;
+
+                _positions[symbol] = new Position
+                {
+                    Symbol = currentPosition.Symbol,
+                    Quantity = currentPosition.Quantity,
+                    AvgPrice = currentPosition.AvgPrice,
+                    CurrentPrice = currentPosition.CurrentPrice,
+                    Live = currentPosition.Live,
+                    Flatten = newFlattenValue
+                };
+
+                return new OrderResult
+                {
+                    Success = true,
+                    Message = $"Flatten toggled to {newFlattenValue} for {symbol}",
+                    OrderId = Guid.NewGuid().ToString()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new OrderResult
+                {
+                    Success = false,
+                    Message = $"Failed to toggle Flatten: {ex.Message}",
                     OrderId = string.Empty
                 };
             }

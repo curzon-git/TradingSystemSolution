@@ -506,6 +506,92 @@ namespace TradingWebInterface.Controllers
             }
         }
 
+        /// <summary>
+        /// Toggle the Live field for a position
+        /// POST /api/trading/rows/toggle-live/{symbol}
+        /// </summary>
+        [HttpPost("rows/toggle-live/{symbol}")]
+        public async Task<ActionResult<CommandResponse>> ToggleLive(string symbol)
+        {
+            try
+            {
+                var result = await _tradingSystem.ToggleLiveAsync(symbol);
+                
+                if (result.Success)
+                {
+                    _logger.LogInformation("Live toggled for symbol: {Symbol}", symbol);
+                    return Ok(new CommandResponse
+                    {
+                        Success = true,
+                        Message = result.Message,
+                        Data = new { symbol, orderId = result.OrderId }
+                    });
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to toggle Live for symbol: {Symbol}. Error: {Error}", symbol, result.Message);
+                    return BadRequest(new CommandResponse
+                    {
+                        Success = false,
+                        Message = result.Message
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Error toggling Live for symbol {symbol}: {ex.Message}";
+                _logger.LogError(ex, errorMsg);
+                return StatusCode(500, new CommandResponse
+                {
+                    Success = false,
+                    Message = errorMsg
+                });
+            }
+        }
+
+        /// <summary>
+        /// Toggle the Flatten field for a position
+        /// POST /api/trading/rows/toggle-flatten/{symbol}
+        /// </summary>
+        [HttpPost("rows/toggle-flatten/{symbol}")]
+        public async Task<ActionResult<CommandResponse>> ToggleFlatten(string symbol)
+        {
+            try
+            {
+                var result = await _tradingSystem.ToggleFlattenAsync(symbol);
+                
+                if (result.Success)
+                {
+                    _logger.LogInformation("Flatten toggled for symbol: {Symbol}", symbol);
+                    return Ok(new CommandResponse
+                    {
+                        Success = true,
+                        Message = result.Message,
+                        Data = new { symbol, orderId = result.OrderId }
+                    });
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to toggle Flatten for symbol: {Symbol}. Error: {Error}", symbol, result.Message);
+                    return BadRequest(new CommandResponse
+                    {
+                        Success = false,
+                        Message = result.Message
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = $"Error toggling Flatten for symbol {symbol}: {ex.Message}";
+                _logger.LogError(ex, errorMsg);
+                return StatusCode(500, new CommandResponse
+                {
+                    Success = false,
+                    Message = errorMsg
+                });
+            }
+        }
+
         #endregion
 
         #region Trading Data APIs
