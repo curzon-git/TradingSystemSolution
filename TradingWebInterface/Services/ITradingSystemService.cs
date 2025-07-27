@@ -62,6 +62,11 @@ namespace TradingWebInterface.Services
         /// Toggle the Flatten field for a position
         /// </summary>
         Task<OrderResult> ToggleFlattenAsync(string symbol);
+
+        /// <summary>
+        /// Update all positions with new data (for external refresh)
+        /// </summary>
+        Task UpdatePositionsAsync(Position[] positions);
     }
 }
 

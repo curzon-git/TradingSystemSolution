@@ -136,7 +136,9 @@ namespace TradingWebInterface.Services
                         Symbol = order.Symbol,
                         Quantity = quantity,
                         AvgPrice = order.Price,
-                        CurrentPrice = order.Price
+                        CurrentPrice = order.Price,
+                        Live = "OFF",
+                        Flatten = false
                     };
                 }
 
@@ -467,6 +469,44 @@ namespace TradingWebInterface.Services
                     Message = $"Failed to toggle Flatten: {ex.Message}",
                     OrderId = string.Empty
                 };
+            }
+        }
+
+        /// <summary>
+        /// Update all positions with new data (for external refresh)
+        /// </summary>
+        public async Task UpdatePositionsAsync(Position[] positions)
+        {
+            await Task.Delay(10); // Simulate processing time
+            
+            try
+            {
+                // Clear existing positions
+                _positions.Clear();
+                
+                // Add new positions
+                foreach (var position in positions)
+                {
+                    if (!string.IsNullOrEmpty(position.Symbol))
+                    {
+                        _positions[position.Symbol] = new Position
+                        {
+                            Symbol = position.Symbol,
+                            Quantity = position.Quantity,
+                            AvgPrice = position.AvgPrice,
+                            CurrentPrice = position.CurrentPrice,
+                            Live = position.Live ?? "OFF",
+                            Flatten = position.Flatten
+                        };
+                    }
+                }
+                
+                Console.WriteLine($"Updated positions: {_positions.Count} positions loaded");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating positions: {ex.Message}");
+                throw;
             }
         }
 
