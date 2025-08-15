@@ -13,14 +13,29 @@ namespace TradingWebInterface.Services
         void AddComment(string message);
         
         /// <summary>
+        /// Add a comment/message to the console (async version)
+        /// </summary>
+        Task AddCommentAsync(string message);
+        
+        /// <summary>
         /// Get all console messages
         /// </summary>
         List<string> GetAllMessages();
         
         /// <summary>
+        /// Get all console messages (async version)
+        /// </summary>
+        Task<List<string>> GetMessagesAsync();
+        
+        /// <summary>
         /// Clear all console messages
         /// </summary>
         void ClearMessages();
+        
+        /// <summary>
+        /// Clear all console messages (async version)
+        /// </summary>
+        Task ClearAsync();
         
         /// <summary>
         /// Get the latest messages (for real-time updates)
@@ -101,6 +116,32 @@ namespace TradingWebInterface.Services
                 var allMessages = _messages.ToList();
                 return allMessages.TakeLast(count).ToList();
             }
+        }
+
+        /// <summary>
+        /// Add a comment/message to the console with timestamp (async version)
+        /// </summary>
+        public Task AddCommentAsync(string message)
+        {
+            AddComment(message);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Get all console messages (async version)
+        /// </summary>
+        public Task<List<string>> GetMessagesAsync()
+        {
+            return Task.FromResult(GetAllMessages());
+        }
+
+        /// <summary>
+        /// Clear all console messages (async version)
+        /// </summary>
+        public Task ClearAsync()
+        {
+            ClearMessages();
+            return Task.CompletedTask;
         }
     }
 }

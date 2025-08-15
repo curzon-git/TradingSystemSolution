@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C# Trading Interface</title>
+    <title>C# Trading Interface - SignalR</title>
     <style>
         * {
             margin: 0;
@@ -42,6 +42,35 @@
             gap: 10px;
         }
         
+        .connection-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        
+        .connection-indicator.connected {
+            background: #28a745;
+            box-shadow: 0 0 10px #28a745;
+        }
+        
+        .connection-indicator.disconnected {
+            background: #dc3545;
+            box-shadow: 0 0 10px #dc3545;
+        }
+        
+        .connection-indicator.connecting {
+            background: #ffc107;
+            box-shadow: 0 0 10px #ffc107;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
         .status-bar {
             background: #f8f9fa;
             padding: 10px 20px;
@@ -77,6 +106,100 @@
             gap: 8px;
         }
         
+        .pnl-summary {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .pnl-total {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .pnl-total.positive {
+            color: #28a745;
+        }
+        
+        .pnl-total.negative {
+            color: #dc3545;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-buy {
+            background: #28a745;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-sell {
+            background: #dc3545;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            flex: 1;
+        }
+        
         .positions-table {
             width: 100%;
             border-collapse: collapse;
@@ -98,13 +221,11 @@
         
         .positions-table tbody tr {
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background-color 0.2s ease;
         }
         
         .positions-table tbody tr:hover {
             background: #f8f9fa;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
         .positions-table tbody tr.highlighted {
@@ -114,228 +235,89 @@
         
         .positive {
             color: #28a745;
-            font-weight: 600;
+            font-weight: 500;
         }
         
         .negative {
             color: #dc3545;
-            font-weight: 600;
+            font-weight: 500;
         }
         
-        .pnl-summary {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        .pnl-total {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        
-        /* Toggle Button Styles */
         .toggle-btn {
-            padding: 4px 8px;
+            padding: 4px 12px;
             border: none;
             border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
             cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
             transition: all 0.2s ease;
-            min-width: 40px;
+            min-width: 60px;
         }
         
-        .toggle-btn.live-on {
+        .toggle-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .live-on {
             background: #28a745;
             color: white;
         }
         
-        .toggle-btn.live-off {
+        .live-off {
             background: #6c757d;
             color: white;
         }
         
-        .toggle-btn.flatten-true {
+        .flatten-true {
             background: #dc3545;
             color: white;
         }
         
-        .toggle-btn.flatten-false {
+        .flatten-false {
             background: #007bff;
             color: white;
         }
         
-        .toggle-btn:hover {
-            opacity: 0.8;
-            transform: translateY(-1px);
-        }
-        
-        .screen-fields {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
+        .console-container {
             margin-top: 20px;
         }
         
         .console-header {
-            background: #2d2d2d;
-            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #404040;
+            margin-bottom: 10px;
         }
         
         .console-header h3 {
+            color: #667eea;
             margin: 0;
-            color: #ffffff;
-            font-size: 16px;
-            font-weight: 600;
         }
         
         .console-controls {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
         
         .btn-sm {
-            padding: 6px 12px;
+            padding: 5px 10px;
             font-size: 12px;
-            border-radius: 4px;
         }
         
         .console-box {
-            background: #1e1e1e;
+            background: #1a1a1a;
             color: #00ff00;
-            font-family: 'Courier New', 'Monaco', monospace;
-            font-size: 13px;
-            line-height: 1.4;
-            padding: 16px;
-            height: 300px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 15px;
+            border-radius: 5px;
+            height: 200px;
             overflow-y: auto;
             white-space: pre-wrap;
-            word-wrap: break-word;
-            border: none;
-            resize: none;
+            border: 1px solid #333;
         }
         
-        .console-box::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .console-box::-webkit-scrollbar-track {
-            background: #2d2d2d;
-        }
-        
-        .console-box::-webkit-scrollbar-thumb {
-            background: #555555;
-            border-radius: 4px;
-        }
-        
-        .console-box::-webkit-scrollbar-thumb:hover {
-            background: #777777;
-        }
-        
-        .console-message {
-            margin-bottom: 4px;
-            color: #00ff00;
-        }
-        
-        .console-message.error {
-            color: #ff6b6b;
-        }
-        
-        .console-message.warning {
-            color: #ffd93d;
-        }
-        
-        .console-message.info {
-            color: #74c0fc;
-        }
-        
-        .field-display {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-        
-        .field-item {
-            background: white;
-            padding: 8px;
-            border-radius: 3px;
-            border: 1px solid #dee2e6;
-        }
-        
-        .field-name {
-            font-weight: bold;
-            color: #6c757d;
-        }
-        
-        .field-value {
-            color: #667eea;
-        }
-        
-        .connection-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-        
-        .connected {
-            background-color: #28a745;
-        }
-        
-        .disconnected {
-            background-color: #dc3545;
-        }
-        
-        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -343,141 +325,74 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
-            display: none;
+            display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            backdrop-filter: blur(5px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
         
         .modal-overlay.show {
-            display: flex;
-            animation: fadeIn 0.3s ease;
+            opacity: 1;
+            visibility: visible;
         }
         
         .modal {
             background: white;
-            border-radius: 15px;
+            border-radius: 10px;
             padding: 30px;
             width: 90%;
-            max-width: 450px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-        }
-        
-        .modal-overlay.show .modal {
-            transform: scale(1);
+            max-width: 500px;
+            position: relative;
             animation: slideUp 0.3s ease;
         }
         
         .modal-header {
-            text-align: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 20px;
         }
         
         .modal-header h3 {
             color: #667eea;
             margin: 0;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
         }
         
         .modal-body {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
+            margin-bottom: 5px;
+            font-weight: 500;
             color: #495057;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
             font-size: 14px;
         }
         
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-        
-        .form-group input:focus, .form-group select:focus {
+        .form-group input:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .form-group input:disabled {
-            background: #e9ecef;
-            color: #6c757d;
-            cursor: not-allowed;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25);
         }
         
         .modal-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
-        }
-        
-        .btn-buy {
-            background: linear-gradient(45deg, #28a745, #20c997);
-            color: white;
-            font-size: 16px;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .btn-buy:hover {
-            background: linear-gradient(45deg, #218838, #1ea085);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
-        }
-        
-        .btn-sell {
-            background: linear-gradient(45deg, #dc3545, #e74c3c);
-            color: white;
-            font-size: 16px;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .btn-sell:hover {
-            background: linear-gradient(45deg, #c82333, #dc2626);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
-        }
-        
-        .btn-cancel {
-            background: #6c757d;
-            color: white;
-            font-size: 14px;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-        
-        .btn-cancel:hover {
-            background: #5a6268;
+            gap: 10px;
         }
         
         .close-btn {
@@ -487,15 +402,14 @@
             background: none;
             border: none;
             font-size: 24px;
-            color: #6c757d;
             cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
+            color: #6c757d;
+            width: 30px;
+            height: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 50%;
             transition: all 0.2s ease;
         }
         
@@ -537,10 +451,6 @@
                 gap: 10px;
             }
             
-            .field-display {
-                grid-template-columns: 1fr;
-            }
-            
             .modal {
                 width: 95%;
                 padding: 20px;
@@ -566,11 +476,11 @@
         <!-- Header -->
         <div class="header">
             <h1>
-                🏛️ C# Trading Interface
-                <span class="connection-indicator connected" id="connection-indicator"></span>
+                🏛️ C# Trading Interface - SignalR
+                <span class="connection-indicator connecting" id="connection-indicator"></span>
             </h1>
             <div class="status-bar">
-                <div><strong>Status:</strong> <span id="status-display">Loading...</span></div>
+                <div><strong>Status:</strong> <span id="status-display">Connecting to SignalR...</span></div>
                 <div><strong>Last Command:</strong> <span id="last-command">None</span></div>
                 <div><strong>Time:</strong> <span id="current-time"></span></div>
             </div>
@@ -614,7 +524,7 @@
                     </thead>
                     <tbody id="positions-tbody">
                         <tr>
-                            <td colspan="8" style="text-align: center; color: #6c757d;">Loading positions...</td>
+                            <td colspan="8" style="text-align: center; color: #6c757d;">Connecting to SignalR...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -632,7 +542,7 @@
                     </div>
                 </div>
                 <div class="console-box" id="console-display">
-                    <!-- Console messages will be populated by JavaScript -->
+                    Connecting to SignalR hub...
                 </div>
             </div>
         </div>
@@ -648,15 +558,15 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="modal-symbol">Symbol:</label>
-                    <input type="text" id="modal-symbol" readonly data-field="symbol_input">
+                    <input type="text" id="modal-symbol" readonly>
                 </div>
                 <div class="form-group">
                     <label for="modal-quantity">Quantity:</label>
-                    <input type="number" id="modal-quantity" placeholder="Enter quantity..." data-field="quantity_input">
+                    <input type="number" id="modal-quantity" placeholder="Enter quantity...">
                 </div>
                 <div class="form-group">
                     <label for="modal-price">Price:</label>
-                    <input type="number" step="0.01" id="modal-price" placeholder="Enter price..." data-field="price_input">
+                    <input type="number" step="0.01" id="modal-price" placeholder="Enter price...">
                 </div>
             </div>
             <div class="modal-buttons">
@@ -699,12 +609,8 @@
                 </div>
             </div>
             <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="addPosition()">
-                    ➕ Add Position
-                </button>
-                <button class="btn btn-cancel" onclick="closeAddRowModal()">
-                    Cancel
-                </button>
+                <button class="btn btn-success" onclick="addPosition()">Add Position</button>
+                <button class="btn btn-cancel" onclick="closeAddRowModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -737,12 +643,8 @@
                 </div>
             </div>
             <div class="modal-buttons">
-                <button class="btn btn-warning" onclick="updatePosition()">
-                    ✏️ Update Position
-                </button>
-                <button class="btn btn-cancel" onclick="closeUpdateRowModal()">
-                    Cancel
-                </button>
+                <button class="btn btn-warning" onclick="updatePosition()">Update Position</button>
+                <button class="btn btn-cancel" onclick="closeUpdateRowModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -761,128 +663,208 @@
                         <option value="">Select a position to delete...</option>
                     </select>
                 </div>
-                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 15px 0; color: #856404;">
-                    <strong>⚠️ Warning:</strong> This action will permanently delete the selected position from the system.
-                </div>
+                <p style="color: #dc3545; margin-top: 15px;">
+                    ⚠️ <strong>Warning:</strong> This action cannot be undone.
+                </p>
             </div>
             <div class="modal-buttons">
-                <button class="btn btn-danger" onclick="deletePosition()">
-                    🗑️ Delete Position
-                </button>
-                <button class="btn btn-cancel" onclick="closeDeleteRowModal()">
-                    Cancel
-                </button>
+                <button class="btn btn-danger" onclick="deletePosition()">Delete Position</button>
+                <button class="btn btn-cancel" onclick="closeDeleteRowModal()">Cancel</button>
             </div>
         </div>
     </div>
 
+    <!-- SignalR Client Library -->
+    <script src="https://unpkg.com/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    
     <script>
         // Global variables
-        let updateInterval;
+        let connection = null;
         let selectedRow = null;
-        const API_BASE = '/api/trading';
-
-        // Initialize the application
+        let currentPositions = {};
+        
+        // Initialize SignalR connection when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('C# Trading Interface initialized');
+            initializeSignalR();
             updateTime();
             setInterval(updateTime, 1000);
             
-            // Start auto-refresh of positions and console
-            refreshPositions();
-            refreshConsole();
-            updateInterval = setInterval(() => {
-                refreshPositions();
-                refreshConsole();
-            }, 2000); // Update every 2 seconds
-            
-            // Add event listeners for modal input fields
-            document.querySelectorAll('#order-modal [data-field]').forEach(input => {
-                input.addEventListener('input', function() {
-                    writeScreenField(this.dataset.field, this.value);
-                });
-                input.addEventListener('change', function() {
-                    writeScreenField(this.dataset.field, this.value);
-                });
-            });
-
-            // Close modal when clicking outside
-            document.getElementById('order-modal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeOrderModal();
-                }
-            });
-
-            // Close modal with Escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeOrderModal();
+            // Add double-click handlers to position rows
+            document.getElementById('positions-tbody').addEventListener('dblclick', function(e) {
+                const row = e.target.closest('tr');
+                if (row && row.dataset.symbol) {
+                    openOrderModal(row.dataset.symbol);
                 }
             });
         });
 
-        // Update current time display
-        function updateTime() {
-            document.getElementById('current-time').textContent = new Date().toLocaleTimeString();
+        // SignalR Connection Management
+        async function initializeSignalR() {
+            try {
+                // Create SignalR connection
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/tradingHub")
+                    .withAutomaticReconnect()
+                    .build();
+
+                // Set up event handlers
+                setupSignalRHandlers();
+
+                // Start the connection
+                updateConnectionStatus('connecting');
+                await connection.start();
+                
+                console.log("SignalR Connected");
+                updateConnectionStatus('connected');
+                updateStatus("Connected to SignalR hub", 'success');
+                
+                // Request initial data
+                await connection.invoke("GetPositions");
+                
+            } catch (error) {
+                console.error("SignalR Connection Error:", error);
+                updateConnectionStatus('disconnected');
+                updateStatus(`SignalR connection failed: ${error.message}`, 'error');
+                
+                // Retry connection after 5 seconds
+                setTimeout(initializeSignalR, 5000);
+            }
         }
 
-        // API Helper Functions
-        async function apiCall(endpoint, method = 'GET', data = null) {
-            try {
-                const options = {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                };
-                
-                if (data) {
-                    options.body = JSON.stringify(data);
+        function setupSignalRHandlers() {
+            // Handle positions updates
+            connection.on("PositionsUpdate", function(accountSummary) {
+                console.log("Received positions update:", accountSummary);
+                updatePositionsDisplay(accountSummary);
+            });
+
+            // Handle console updates
+            connection.on("ConsoleUpdate", function(messages) {
+                console.log("Received console update:", messages);
+                updateConsoleDisplay(messages);
+            });
+
+            // Handle order results
+            connection.on("OrderResult", function(result) {
+                console.log("Received order result:", result);
+                updateStatus(result.message, result.success ? 'success' : 'error');
+                if (result.success) {
+                    closeOrderModal();
                 }
-                
-                const response = await fetch(`${API_BASE}${endpoint}`, options);
-                const result = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(result.error || result.message || `HTTP error! status: ${response.status}`);
+            });
+
+            // Handle toggle results
+            connection.on("ToggleResult", function(result) {
+                console.log("Received toggle result:", result);
+                updateStatus(result.message, result.success ? 'success' : 'error');
+            });
+
+            // Handle add position results
+            connection.on("AddPositionResult", function(result) {
+                console.log("Received add position result:", result);
+                updateStatus(result.message, result.success ? 'success' : 'error');
+                if (result.success) {
+                    closeAddRowModal();
                 }
-                
-                return result;
+            });
+
+            // Handle delete position results
+            connection.on("DeletePositionResult", function(result) {
+                console.log("Received delete position result:", result);
+                updateStatus(result.message, result.success ? 'success' : 'error');
+                if (result.success) {
+                    closeDeleteRowModal();
+                }
+            });
+
+            // Handle update position results
+            connection.on("UpdatePositionResult", function(result) {
+                console.log("Received update position result:", result);
+                updateStatus(result.message, result.success ? 'success' : 'error');
+                if (result.success) {
+                    closeUpdateRowModal();
+                }
+            });
+
+            // Handle errors
+            connection.on("Error", function(message) {
+                console.error("SignalR Error:", message);
+                updateStatus(`Error: ${message}`, 'error');
+            });
+
+            // Handle connection state changes
+            connection.onreconnecting(() => {
+                updateConnectionStatus('connecting');
+                updateStatus("Reconnecting to SignalR...", 'info');
+            });
+
+            connection.onreconnected(() => {
+                updateConnectionStatus('connected');
+                updateStatus("Reconnected to SignalR", 'success');
+                // Request fresh data after reconnection
+                connection.invoke("GetPositions");
+            });
+
+            connection.onclose(() => {
+                updateConnectionStatus('disconnected');
+                updateStatus("SignalR connection closed", 'error');
+                // Attempt to reconnect after 5 seconds
+                setTimeout(initializeSignalR, 5000);
+            });
+        }
+
+        // Trading Functions (using SignalR)
+        async function refreshPositions() {
+            try {
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    await connection.invoke("GetPositions");
+                    updateStatus("Positions refreshed", 'success');
+                } else {
+                    updateStatus("Not connected to SignalR", 'error');
+                }
             } catch (error) {
-                console.error('API call failed:', error);
-                updateStatus(`Error: ${error.message}`, 'error');
-                throw error;
+                console.error('Error refreshing positions:', error);
+                updateStatus(`Refresh failed: ${error.message}`, 'error');
             }
         }
 
-        // C# Screen Field API Functions (GetGUIField/PutGUIField equivalent)
-        async function readScreenField(fieldName) {
+        async function clearAllFields() {
             try {
-                const result = await apiCall(`/screen/read/${fieldName}`);
-                return result.value;
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    // Note: This would need to be implemented in the SignalR hub
+                    updateStatus("Clear all fields not implemented via SignalR yet", 'info');
+                } else {
+                    updateStatus("Not connected to SignalR", 'error');
+                }
             } catch (error) {
-                console.error(`Failed to read field ${fieldName}:`, error);
-                return null;
+                console.error('Error clearing fields:', error);
+                updateStatus(`Clear failed: ${error.message}`, 'error');
             }
         }
 
-        async function writeScreenField(fieldName, value) {
+        async function toggleLive(symbol) {
             try {
-                const result = await apiCall(`/screen/write/${fieldName}`, 'POST', { value: value });
-                return result.success;
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    await connection.invoke("ToggleLive", symbol);
+                } else {
+                    updateStatus("Not connected to SignalR", 'error');
+                }
             } catch (error) {
-                console.error(`Failed to write field ${fieldName}:`, error);
-                return false;
+                console.error('Error toggling Live:', error);
+                updateStatus(`Toggle Live failed: ${error.message}`, 'error');
             }
         }
 
-        async function readAllScreenFields() {
+        async function toggleFlatten(symbol) {
             try {
-                const result = await apiCall('/screen/read_all');
-                return result.fields;
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    await connection.invoke("ToggleFlatten", symbol);
+                } else {
+                    updateStatus("Not connected to SignalR", 'error');
+                }
             } catch (error) {
-                console.error('Failed to read all screen fields:', error);
-                return {};
+                console.error('Error toggling Flatten:', error);
+                updateStatus(`Toggle Flatten failed: ${error.message}`, 'error');
             }
         }
 
@@ -897,12 +879,6 @@
             symbolInput.value = symbol;
             quantityInput.value = '';
             priceInput.value = '';
-            
-            // Update screen fields
-            writeScreenField('symbol_input', symbol);
-            writeScreenField('quantity_input', '');
-            writeScreenField('price_input', '');
-            writeScreenField('order_type', 'BUY');
             
             // Show modal
             modal.classList.add('show');
@@ -929,306 +905,35 @@
         async function placeModalOrder(orderType) {
             try {
                 const symbol = document.getElementById('modal-symbol').value;
-                const quantity = document.getElementById('modal-quantity').value;
-                const price = document.getElementById('modal-price').value;
+                const quantity = parseFloat(document.getElementById('modal-quantity').value);
+                const price = parseFloat(document.getElementById('modal-price').value);
                 
                 if (!quantity || !price) {
                     updateStatus('Please enter both quantity and price', 'error');
                     return;
                 }
                 
-                // Update screen fields with order type
-                await writeScreenField('order_type', orderType);
-                
-                updateStatus(`Placing ${orderType} order for ${quantity} ${symbol} @ $${price}...`, 'info');
-                
-                // Place the order
-                const result = await apiCall('/command/place_order', 'POST');
-                updateStatus(result.message, 'success');
-                
-                // Close modal and refresh positions
-                closeOrderModal();
-                setTimeout(refreshPositions, 500);
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    updateStatus(`Placing ${orderType} order for ${quantity} ${symbol} @ $${price}...`, 'info');
+                    
+                    const orderRequest = {
+                        symbol: symbol,
+                        quantity: orderType === 'BUY' ? quantity : -quantity,
+                        price: price,
+                        orderType: orderType
+                    };
+                    
+                    await connection.invoke("PlaceOrder", orderRequest);
+                } else {
+                    updateStatus("Not connected to SignalR", 'error');
+                }
                 
             } catch (error) {
+                console.error('Error placing order:', error);
                 updateStatus(`Order failed: ${error.message}`, 'error');
             }
         }
 
-        // Button Callback Functions
-        async function refreshPositions() {
-            try {
-                const result = await apiCall('/positions');
-                updatePositionsDisplay(result);
-                updateConnectionStatus(true);
-            } catch (error) {
-                console.error('Failed to refresh positions:', error);
-                updateConnectionStatus(false);
-            }
-        }
-
-        async function clearAllFields() {
-            try {
-                const result = await apiCall('/command/clear_fields', 'POST');
-                updateStatus(result.message, 'success');
-            } catch (error) {
-                updateStatus(`Clear failed: ${error.message}`, 'error');
-            }
-        }
-
-        // Display Update Functions
-        function updatePositionsDisplay(data) {
-            // Update P&L summary
-            document.getElementById('account-balance').textContent = data.accountBalance.toFixed(2);
-            const totalPnlElement = document.getElementById('total-pnl');
-            totalPnlElement.textContent = `$${data.totalPnL.toFixed(2)}`;
-            totalPnlElement.className = `pnl-total ${data.totalPnL >= 0 ? 'positive' : 'negative'}`;
-
-            // Update positions table
-            const tbody = document.getElementById('positions-tbody');
-            if (Object.keys(data.positions).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6c757d;">No positions - Double-click any row to start trading</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = '';
-            Object.entries(data.positions).forEach(([symbol, position]) => {
-                const row = document.createElement('tr');
-                const pnlClass = position.pnL >= 0 ? 'positive' : 'negative';
-                
-                // Toggle button classes and text
-                const liveButtonClass = position.live === "ON" ? "live-on" : "live-off";
-                const liveButtonText = position.live === "ON" ? "ON" : "OFF";
-                const flattenButtonClass = position.flatten ? "flatten-true" : "flatten-false";
-                const flattenButtonText = position.flatten ? "TRUE" : "FALSE";
-                
-                row.innerHTML = `
-                    <td><strong>${position.symbol}</strong></td>
-                    <td>${position.quantity}</td>
-                    <td>$${position.avgPrice.toFixed(2)}</td>
-                    <td>$${position.currentPrice.toFixed(2)}</td>
-                    <td class="${pnlClass}">$${position.pnL.toFixed(2)}</td>
-                    <td class="${pnlClass}">${position.pnLPercent.toFixed(2)}%</td>
-                    <td><button class="toggle-btn ${liveButtonClass}" onclick="toggleLive('${position.symbol}')">${liveButtonText}</button></td>
-                    <td><button class="toggle-btn ${flattenButtonClass}" onclick="toggleFlatten('${position.symbol}')">${flattenButtonText}</button></td>
-                `;
-                
-                // Add row interaction events
-                row.addEventListener('click', function() {
-                    // Remove previous highlight
-                    if (selectedRow) {
-                        selectedRow.classList.remove('highlighted');
-                    }
-                    // Highlight current row
-                    this.classList.add('highlighted');
-                    selectedRow = this;
-                });
-                
-                row.addEventListener('dblclick', function() {
-                    openOrderModal(position.symbol);
-                });
-                
-                tbody.appendChild(row);
-            });
-        }
-
-        // Console Display Functions
-        async function refreshConsole() {
-            try {
-                const response = await fetch(`${API_BASE}/console/messages`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateConsoleDisplay(result.messages);
-                } else {
-                    console.error('Failed to refresh console:', result);
-                }
-            } catch (error) {
-                console.error('Error refreshing console:', error);
-            }
-        }
-
-        async function clearConsole() {
-            try {
-                const response = await fetch(`${API_BASE}/console/clear`, {
-                    method: 'POST'
-                });
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateConsoleDisplay([]);
-                    setTimeout(refreshConsole, 100); // Refresh to show "Console cleared" message
-                } else {
-                    console.error('Failed to clear console:', result);
-                }
-            } catch (error) {
-                console.error('Error clearing console:', error);
-            }
-        }
-
-        function updateConsoleDisplay(messages) {
-            const consoleBox = document.getElementById('console-display');
-            
-            if (!messages || messages.length === 0) {
-                consoleBox.textContent = 'Console is empty...';
-                return;
-            }
-            
-            // Join messages with newlines and display
-            consoleBox.textContent = messages.join('\n');
-            
-            // Auto-scroll to bottom
-            consoleBox.scrollTop = consoleBox.scrollHeight;
-        }
-
-        async function addConsoleComment(message) {
-            try {
-                const response = await fetch(`${API_BASE}/console/add`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Refresh console to show new message
-                    setTimeout(refreshConsole, 100);
-                } else {
-                    console.error('Failed to add console comment:', result);
-                }
-            } catch (error) {
-                console.error('Error adding console comment:', error);
-            }
-        }
-
-        // Console Display Functions
-        async function refreshConsole() {
-            try {
-                const response = await fetch(`${API_BASE}/console/messages`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateConsoleDisplay(result.messages);
-                } else {
-                    console.error('Failed to refresh console:', result);
-                }
-            } catch (error) {
-                console.error('Error refreshing console:', error);
-            }
-        }
-
-        async function clearConsole() {
-            try {
-                const response = await fetch(`${API_BASE}/console/clear`, {
-                    method: 'POST'
-                });
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateConsoleDisplay([]);
-                    setTimeout(refreshConsole, 100); // Refresh to show "Console cleared" message
-                } else {
-                    console.error('Failed to clear console:', result);
-                }
-            } catch (error) {
-                console.error('Error clearing console:', error);
-            }
-        }
-
-        function updateConsoleDisplay(messages) {
-            const consoleBox = document.getElementById('console-display');
-            
-            if (!messages || messages.length === 0) {
-                consoleBox.textContent = 'Console is empty...';
-                return;
-            }
-            
-            // Join messages with newlines and display
-            consoleBox.textContent = messages.join('\n');
-            
-            // Auto-scroll to bottom
-            consoleBox.scrollTop = consoleBox.scrollHeight;
-        }
-
-        async function addConsoleComment(message) {
-            try {
-                const response = await fetch(`${API_BASE}/console/add`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Refresh console to show new message
-                    setTimeout(refreshConsole, 100);
-                } else {
-                    console.error('Failed to add console comment:', result);
-                }
-            } catch (error) {
-                console.error('Error adding console comment:', error);
-            }
-        }
-
-        async function refreshScreenFields() {
-            try {
-                const fields = await readAllScreenFields();
-                updateScreenFieldsDisplay(fields);
-                
-                // Update status and last command
-                if (fields.status_display) {
-                    document.getElementById('status-display').textContent = fields.status_display;
-                }
-                if (fields.last_command) {
-                    document.getElementById('last-command').textContent = fields.last_command;
-                }
-            } catch (error) {
-                console.error('Failed to refresh screen fields:', error);
-            }
-        }
-
-        function updateScreenFieldsDisplay(fields) {
-            const container = document.getElementById('screen-fields-display');
-            container.innerHTML = '';
-            
-            Object.entries(fields).forEach(([fieldName, value]) => {
-                const fieldDiv = document.createElement('div');
-                fieldDiv.className = 'field-item';
-                fieldDiv.innerHTML = `
-                    <div class="field-name">${fieldName}:</div>
-                    <div class="field-value">${value || '(empty)'}</div>
-                `;
-                container.appendChild(fieldDiv);
-            });
-        }
-
-        function updateStatus(message, type = 'info') {
-            const statusElement = document.getElementById('status-display');
-            statusElement.textContent = message;
-            
-            console.log(`[${type.toUpperCase()}] ${message}`);
-        }
-
-        function updateConnectionStatus(isConnected) {
-            const indicator = document.getElementById('connection-indicator');
-            indicator.className = `connection-indicator ${isConnected ? 'connected' : 'disconnected'}`;
-        }
-
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', function() {
-            if (updateInterval) {
-                clearInterval(updateInterval);
-            }
-        });
-
-        // Row Management Functions
-        
         // Add Position Modal Functions
         function openAddRowModal() {
             document.getElementById('add-row-modal').classList.add('show');
@@ -1256,28 +961,19 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/rows/add`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        Symbol: symbol,
-                        Quantity: quantity,
-                        AvgPrice: avgPrice,
-                        CurrentPrice: currentPrice
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`Position added: ${symbol}`, 'success');
-                    closeAddRowModal();
-                    refreshPositions(); // Refresh the positions table
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    const position = {
+                        symbol: symbol,
+                        quantity: quantity,
+                        avgPrice: avgPrice,
+                        currentPrice: currentPrice,
+                        live: "OFF",
+                        flatten: false
+                    };
+                    
+                    await connection.invoke("AddPosition", position);
                 } else {
-                    updateStatus(`Failed to add position: ${result.message}`, 'error');
-                    alert(`Error: ${result.message}`);
+                    updateStatus("Not connected to SignalR", 'error');
                 }
             } catch (error) {
                 console.error('Error adding position:', error);
@@ -1294,20 +990,12 @@
             // Populate symbol dropdown with current positions
             select.innerHTML = '<option value="">Select a position to update...</option>';
             
-            fetch(`${API_BASE}/positions`)
-                .then(response => response.json())
-                .then(data => {
-                    Object.keys(data.positions).forEach(symbol => {
-                        const option = document.createElement('option');
-                        option.value = symbol;
-                        option.textContent = symbol;
-                        select.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error loading positions:', error);
-                    updateStatus('Error loading positions for update', 'error');
-                });
+            Object.keys(currentPositions).forEach(symbol => {
+                const option = document.createElement('option');
+                option.value = symbol;
+                option.textContent = symbol;
+                select.appendChild(option);
+            });
             
             modal.classList.add('show');
         }
@@ -1323,22 +1011,12 @@
 
         function loadPositionForUpdate() {
             const symbol = document.getElementById('update-symbol').value;
-            if (!symbol) return;
-
-            fetch(`${API_BASE}/positions`)
-                .then(response => response.json())
-                .then(data => {
-                    const position = data.positions[symbol];
-                    if (position) {
-                        document.getElementById('update-quantity').value = position.quantity;
-                        document.getElementById('update-avg-price').value = position.avgPrice.toFixed(2);
-                        document.getElementById('update-current-price').value = position.currentPrice.toFixed(2);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading position details:', error);
-                    updateStatus('Error loading position details', 'error');
-                });
+            if (symbol && currentPositions[symbol]) {
+                const position = currentPositions[symbol];
+                document.getElementById('update-quantity').value = position.quantity;
+                document.getElementById('update-avg-price').value = position.avgPrice;
+                document.getElementById('update-current-price').value = position.currentPrice;
+            }
         }
 
         async function updatePosition() {
@@ -1353,28 +1031,19 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/rows/update/${symbol}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        Symbol: symbol,
-                        Quantity: quantity,
-                        AvgPrice: avgPrice,
-                        CurrentPrice: currentPrice || 0
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`Position updated: ${symbol}`, 'success');
-                    closeUpdateRowModal();
-                    refreshPositions(); // Refresh the positions table
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    const position = {
+                        symbol: symbol,
+                        quantity: quantity,
+                        avgPrice: avgPrice,
+                        currentPrice: currentPrice || currentPositions[symbol]?.currentPrice,
+                        live: currentPositions[symbol]?.live || "OFF",
+                        flatten: currentPositions[symbol]?.flatten || false
+                    };
+                    
+                    await connection.invoke("UpdatePosition", symbol, position);
                 } else {
-                    updateStatus(`Failed to update position: ${result.message}`, 'error');
-                    alert(`Error: ${result.message}`);
+                    updateStatus("Not connected to SignalR", 'error');
                 }
             } catch (error) {
                 console.error('Error updating position:', error);
@@ -1391,20 +1060,12 @@
             // Populate symbol dropdown with current positions
             select.innerHTML = '<option value="">Select a position to delete...</option>';
             
-            fetch(`${API_BASE}/positions`)
-                .then(response => response.json())
-                .then(data => {
-                    Object.keys(data.positions).forEach(symbol => {
-                        const option = document.createElement('option');
-                        option.value = symbol;
-                        option.textContent = symbol;
-                        select.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error loading positions:', error);
-                    updateStatus('Error loading positions for deletion', 'error');
-                });
+            Object.keys(currentPositions).forEach(symbol => {
+                const option = document.createElement('option');
+                option.value = symbol;
+                option.textContent = symbol;
+                select.appendChild(option);
+            });
             
             modal.classList.add('show');
         }
@@ -1416,30 +1077,21 @@
 
         async function deletePosition() {
             const symbol = document.getElementById('delete-symbol').value;
-            
+
             if (!symbol) {
                 alert('Please select a position to delete.');
                 return;
             }
 
-            if (!confirm(`Are you sure you want to delete the position for ${symbol}? This action cannot be undone.`)) {
+            if (!confirm(`Are you sure you want to delete the position for ${symbol}?`)) {
                 return;
             }
 
             try {
-                const response = await fetch(`${API_BASE}/rows/delete/${symbol}`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateStatus(`Position deleted: ${symbol}`, 'success');
-                    closeDeleteRowModal();
-                    refreshPositions(); // Refresh the positions table
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    await connection.invoke("DeletePosition", symbol);
                 } else {
-                    updateStatus(`Failed to delete position: ${result.message}`, 'error');
-                    alert(`Error: ${result.message}`);
+                    updateStatus("Not connected to SignalR", 'error');
                 }
             } catch (error) {
                 console.error('Error deleting position:', error);
@@ -1448,74 +1100,161 @@
             }
         }
 
-        // Toggle Functions
-        async function toggleLive(symbol) {
+        // Console Functions
+        async function refreshConsole() {
             try {
-                const response = await fetch(`/api/trading/rows/toggle-live/${symbol}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log(`Live toggled for ${symbol}:`, result.message);
-                    updateStatus(result.message, 'success');
-                    // Refresh positions to show updated state
-                    refreshPositions();
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    // Console updates are automatically pushed via SignalR
+                    updateStatus("Console refreshed", 'success');
                 } else {
-                    console.error(`Failed to toggle Live for ${symbol}:`, result.message);
-                    updateStatus(`Failed to toggle Live: ${result.message}`, 'error');
-                    alert(`Error: ${result.message}`);
+                    updateStatus("Not connected to SignalR", 'error');
                 }
             } catch (error) {
-                console.error('Error toggling Live:', error);
-                updateStatus('Error toggling Live', 'error');
-                alert('Error toggling Live. Please try again.');
+                console.error('Error refreshing console:', error);
             }
         }
 
-        async function toggleFlatten(symbol) {
+        async function clearConsole() {
             try {
-                const response = await fetch(`/api/trading/rows/toggle-flatten/${symbol}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log(`Flatten toggled for ${symbol}:`, result.message);
-                    updateStatus(result.message, 'success');
-                    // Refresh positions to show updated state
-                    refreshPositions();
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    await connection.invoke("ClearConsole");
                 } else {
-                    console.error(`Failed to toggle Flatten for ${symbol}:`, result.message);
-                    updateStatus(`Failed to toggle Flatten: ${result.message}`, 'error');
-                    alert(`Error: ${result.message}`);
+                    updateStatus("Not connected to SignalR", 'error');
                 }
             } catch (error) {
-                console.error('Error toggling Flatten:', error);
-                updateStatus('Error toggling Flatten', 'error');
-                alert('Error toggling Flatten. Please try again.');
+                console.error('Error clearing console:', error);
+                updateStatus(`Clear console failed: ${error.message}`, 'error');
             }
         }
 
-        // Expose functions for external C# client testing
-        window.TradingInterface = {
-            GetGUIField: readScreenField,
-            PutGUIField: writeScreenField,
-            GetAllGUIFields: readAllScreenFields,
-            OpenOrderModal: openOrderModal,
-            CloseOrderModal: closeOrderModal,
-            RefreshPositions: refreshPositions,
-            ToggleLive: toggleLive,
-            ToggleFlatten: toggleFlatten
-        };
+        async function addConsoleComment(message) {
+            try {
+                if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                    await connection.invoke("AddConsoleComment", message);
+                } else {
+                    updateStatus("Not connected to SignalR", 'error');
+                }
+            } catch (error) {
+                console.error('Error adding console comment:', error);
+            }
+        }
+
+        // Display Update Functions
+        function updatePositionsDisplay(data) {
+            // Store current positions for modal dropdowns
+            currentPositions = data.positions;
+            
+            // Update P&L summary
+            document.getElementById('account-balance').textContent = data.accountBalance.toFixed(2);
+            const totalPnlElement = document.getElementById('total-pnl');
+            totalPnlElement.textContent = `$${data.totalPnL.toFixed(2)}`;
+            totalPnlElement.className = `pnl-total ${data.totalPnL >= 0 ? 'positive' : 'negative'}`;
+
+            // Update positions table
+            const tbody = document.getElementById('positions-tbody');
+            if (Object.keys(data.positions).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6c757d;">No positions - Double-click any row to start trading</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            Object.entries(data.positions).forEach(([symbol, position]) => {
+                const row = document.createElement('tr');
+                row.dataset.symbol = symbol;
+                const pnlClass = position.pnL >= 0 ? 'positive' : 'negative';
+                
+                // Toggle button classes and text
+                const liveButtonClass = position.live === "ON" ? "live-on" : "live-off";
+                const liveButtonText = position.live === "ON" ? "ON" : "OFF";
+                const flattenButtonClass = position.flatten ? "flatten-true" : "flatten-false";
+                const flattenButtonText = position.flatten ? "TRUE" : "FALSE";
+                
+                row.innerHTML = `
+                    <td><strong>${position.symbol}</strong></td>
+                    <td>${position.quantity}</td>
+                    <td>$${position.avgPrice.toFixed(2)}</td>
+                    <td>$${position.currentPrice.toFixed(2)}</td>
+                    <td class="${pnlClass}">$${position.pnL.toFixed(2)}</td>
+                    <td class="${pnlClass}">${position.pnLPercent.toFixed(2)}%</td>
+                    <td>
+                        <button class="toggle-btn ${liveButtonClass}" onclick="toggleLive('${position.symbol}')">
+                            ${liveButtonText}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="toggle-btn ${flattenButtonClass}" onclick="toggleFlatten('${position.symbol}')">
+                            ${flattenButtonText}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateConsoleDisplay(messages) {
+            const consoleBox = document.getElementById('console-display');
+            
+            if (!messages || messages.length === 0) {
+                consoleBox.textContent = 'Console is empty...';
+                return;
+            }
+            
+            // Join messages with newlines and display
+            consoleBox.textContent = messages.join('\n');
+            
+            // Auto-scroll to bottom
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusElement = document.getElementById('status-display');
+            statusElement.textContent = message;
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function updateConnectionStatus(status) {
+            const indicator = document.getElementById('connection-indicator');
+            indicator.className = `connection-indicator ${status}`;
+            
+            const statusText = {
+                'connected': 'Connected to SignalR',
+                'connecting': 'Connecting to SignalR...',
+                'disconnected': 'Disconnected from SignalR'
+            };
+            
+            if (statusText[status]) {
+                document.getElementById('status-display').textContent = statusText[status];
+            }
+        }
+
+        // Update current time display
+        function updateTime() {
+            document.getElementById('current-time').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('show');
+            }
+        });
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.show').forEach(modal => {
+                    modal.classList.remove('show');
+                });
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (connection) {
+                connection.stop();
+            }
+        });
     </script>
 </body>
 </html>

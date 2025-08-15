@@ -1,68 +1,86 @@
 using TradingWebInterface.Services;
 using TradingWebInterface.Models;
+using TradingWebInterface.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
 
 namespace TradingWebInterface
 {
     public class Program
     {
-        // Static reference to the trading system service for external access
-        private static ITradingSystemService? _tradingSystemService;
+        // Static reference to the SignalR hub context for external access
+        private static IHubContext<TradingHub>? _hubContext;
+        private static IServiceProvider? _serviceProvider;
         
         /// <summary>
-        /// Refreshes the webpage with new position data
+        /// Refreshes the webpage with new position data using SignalR
         /// </summary>
         /// <param name="positions">Array of Position objects to update the webpage with</param>
         public static async Task RefreshWebPage(Position[] positions)
         {
-            if (_tradingSystemService == null)
+            if (_hubContext == null)
             {
-                Console.WriteLine("Warning: Trading system service not initialized. Cannot refresh webpage.");
+                Console.WriteLine("Warning: SignalR hub context not initialized. Cannot refresh webpage.");
                 return;
             }
 
             try
             {
-                Console.WriteLine($"RefreshWebPage called with {positions.Length} positions");
+                Console.WriteLine($"RefreshWebPage called with {positions.Length} positions via SignalR");
                 
-                // Update the positions in the trading system service
-                await _tradingSystemService.UpdatePositionsAsync(positions);
-                
-                Console.WriteLine("Webpage positions updated successfully");
+                // Get the trading system service and update positions
+                var serviceProvider = _serviceProvider;
+                if (serviceProvider != null)
+                {
+                    var tradingService = serviceProvider.GetRequiredService<ITradingSystemService>();
+                    await tradingService.UpdatePositionsAsync(positions);
+                    
+                    // Get updated account summary and send to all clients
+                    var accountSummary = await tradingService.GetAccountSummaryAsync();
+                    await _hubContext.Clients.All.SendAsync("PositionsUpdate", accountSummary);
+                    
+                    Console.WriteLine("Webpage positions updated successfully via SignalR");
+                }
+                else
+                {
+                    Console.WriteLine("Warning: Service provider not available.");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error refreshing webpage: {ex.Message}");
+                Console.WriteLine($"Error refreshing webpage via SignalR: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Gets the current positions from the webpage
+        /// Gets the current positions from the webpage using SignalR
+        /// Note: This function gets data directly from the backend service
         /// </summary>
         /// <returns>Array of Position objects currently displayed on the webpage</returns>
         public static async Task<Position[]> GetWebPage()
         {
-            if (_tradingSystemService == null)
+            if (_serviceProvider == null)
             {
-                Console.WriteLine("Warning: Trading system service not initialized. Cannot get webpage data.");
+                Console.WriteLine("Warning: Service provider not initialized. Cannot get webpage data.");
                 return Array.Empty<Position>();
             }
 
             try
             {
-                Console.WriteLine("GetWebPage called");
+                Console.WriteLine("GetWebPage called via SignalR");
                 
-                // Get current account summary which contains positions
-                var accountSummary = await _tradingSystemService.GetAccountSummaryAsync();
-                var positionsArray = accountSummary.Positions.Values.ToArray();
+                // Get current positions from the backend service
+                var tradingService = _serviceProvider.GetRequiredService<ITradingSystemService>();
+                var accountSummary = await tradingService.GetAccountSummaryAsync();
+                var positions = accountSummary.Positions.Values.ToArray();
                 
-                Console.WriteLine($"Retrieved {positionsArray.Length} positions from webpage");
+                Console.WriteLine($"GetWebPage returning {positions.Length} positions");
                 
-                return positionsArray;
+                return positions;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error getting webpage data: {ex.Message}");
+                Console.WriteLine($"Error getting webpage data via SignalR: {ex.Message}");
                 return Array.Empty<Position>();
             }
         }
@@ -90,17 +108,26 @@ namespace TradingWebInterface
             builder.Services.AddSingleton<ITradingSystemService, TradingSystemService>();
             builder.Services.AddSingleton<ScreenFieldManager>();
             builder.Services.AddSingleton<IConsoleService, ConsoleService>();
+            builder.Services.AddSingleton<ISignalRNotificationService, SignalRNotificationService>();
+            builder.Services.AddSingleton<IWebPageInterfaceService, WebPageInterfaceService>();
+            
+            // Add SignalR
+            builder.Services.AddSignalR();
 
             var app = builder.Build();
 
-            // Initialize static service reference for external access
-            _tradingSystemService = app.Services.GetRequiredService<ITradingSystemService>();
+            // Initialize static SignalR hub context for external access
+            _hubContext = app.Services.GetRequiredService<IHubContext<TradingHub>>();
+            _serviceProvider = app.Services;
 
             // Configure the HTTP request pipeline
             app.UseCors();
             app.UseStaticFiles();
             app.UseRouting();
             app.MapControllers();
+            
+            // Map SignalR hub
+            app.MapHub<TradingHub>("/tradingHub");
 
             // Serve the main page
             app.MapFallbackToFile("index.html");
